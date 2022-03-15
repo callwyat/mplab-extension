@@ -155,7 +155,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body.supportsEvaluateForHovers = true;
 
 		// make VS Code show a 'step back' button
-		response.body.supportsStepBack = true;
+		response.body.supportsStepBack = false;
 
 		// make VS Code support data breakpoints
 		response.body.supportsDataBreakpoints = true;
@@ -174,7 +174,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body.supportsStepInTargetsRequest = true;
 
 		// the adapter defines two exceptions filters, one with support for conditions.
-		response.body.supportsExceptionFilterOptions = true;
+		response.body.supportsExceptionFilterOptions = false;
 		response.body.exceptionBreakpointFilters = [
 			{
 				filter: 'namedException',
@@ -194,7 +194,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		];
 
 		// make VS Code send exceptionInfo request
-		response.body.supportsExceptionInfoRequest = true;
+		response.body.supportsExceptionInfoRequest = false;
 
 		// make VS Code send setVariable request
 		response.body.supportsSetVariable = true;
