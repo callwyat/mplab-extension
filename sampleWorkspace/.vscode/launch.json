@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"type": "mdb",
+			"type": "mock",
 			"request": "launch",
 			"name": "Debug readme.md",
 			"program": "${workspaceFolder}/readme.md",
