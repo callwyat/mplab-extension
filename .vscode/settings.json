@@ -10,6 +10,7 @@
     "typescript.tsc.autoDetect": "off",
     // Project specific spelling
     "cSpell.words": [
-        "MPLABX"
+        "mplab",
+        "mplabx"
     ]
 }
