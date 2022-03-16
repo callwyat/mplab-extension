@@ -1,11 +1,11 @@
 {
-  "name": "mock-debug",
-  "displayName": "Mock Debug",
+  "name": "mplabx-extension",
+  "displayName": "MPLABX Extension",
   "version": "0.49.6",
-  "publisher": "ms-vscode",
-  "description": "Starter extension for developing debug adapters for VS Code.",
+  "publisher": "ya-technologies",
+  "description": "Build, Program, and Debug MPLABX Projects.",
   "author": {
-    "name": "Microsoft Corporation"
+    "name": "Y@ Technologies"
   },
   "license": "MIT",
   "keywords": [
@@ -21,10 +21,10 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/Microsoft/vscode-mock-debug.git"
+    "url": "https://github.com/callwyat/mplab-extension.git"
   },
   "bugs": {
-    "url": "https://github.com/Microsoft/vscode-mock-debug/issues"
+    "url": "https://github.com/callwyat/mplab-extension/issues"
   },
   "scripts": {
     "compile": "tsc -p ./",
