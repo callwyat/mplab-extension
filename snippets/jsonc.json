@@ -1,0 +1,13 @@
+{
+    "MPLABX Build" : {
+        "prefix": ["mplabx-build"],
+        "body": [ "{",
+                  "\t\"label\": \"MPLABX Build\",",
+                  "\t\"type\": \"mplabx\",",
+                  "\t\"task\": \"build\",",
+                  "\t\"projectFolder\": \"\\${workspaceFolder}\",",
+                  "}"
+                ],
+        "description": "Template for setting a MPLABX Build"
+      }
+}

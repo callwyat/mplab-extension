@@ -16,6 +16,7 @@
   },
   "icon": "images/mock-debug-icon.png",
   "categories": [
+    "Snippets",
     "Debuggers"
   ],
   "private": true,
@@ -227,6 +228,12 @@
             "description": "The absolute path to the Project Folder to make"
           }
         }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "jsonc",
+        "path": "./snippets/jsonc.json"
       }
     ]
   }
