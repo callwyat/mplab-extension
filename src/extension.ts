@@ -24,12 +24,15 @@ import { platform } from 'process';
 import { ProviderResult } from 'vscode';
 import { MockDebugSession } from './mockDebug';
 import { activateMockDebug, workspaceFileAccessor } from './activateMockDebug';
+import { MPLABXAssistant, MpmakeTaskDefinition } from './MPLABXAssistant';
 
 /*
  * The compile time flag 'runMode' controls how the debug adapter is run.
  * Please note: the test suite only supports 'external' mode.
  */
 const runMode: 'external' | 'server' | 'namedPipeServer' | 'inline' = 'inline';
+
+const mplabxAssistant = new MPLABXAssistant();
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -55,6 +58,57 @@ export function activate(context: vscode.ExtensionContext) {
 			activateMockDebug(context);
 			break;
 	}
+	
+	context.subscriptions.push(
+		
+		vscode.commands.registerCommand('extension.vslabx.getMplabxInstallLocation', config => {
+			return new MPLABXAssistant().mplabxLocation;
+		}),
+
+		vscode.commands.registerCommand('extension.vslabx.build', () => {
+
+			selectMplabxProjectFolder().then((p) => {
+				if (p) {
+					vscode.tasks.executeTask(mplabxAssistant.getBuildTask({
+						projectFolder: p,
+						type: 'build'
+					}));
+				}
+			});
+		}),
+
+		vscode.tasks.registerTaskProvider('mplabx', {
+			provideTasks(token?: vscode.CancellationToken) {
+				return [];
+			},
+			resolveTask(_task: vscode.Task): vscode.Task | undefined {
+				const task = _task.definition.task;
+				if (task) {
+					const definition: MpmakeTaskDefinition = <any>_task.definition;
+
+					if (task === "build") {
+						// resolveTask requires that the same definition object be used.
+						return mplabxAssistant.getBuildTask(definition, _task.scope);
+
+					}
+				}
+				return undefined;
+			}
+		}),
+	);
+}
+
+async function selectMplabxProjectFolder(): Promise<string | undefined> {
+	const paths = await mplabxAssistant.findMplabxProjectFolders();
+	let path: Thenable<string | undefined>;
+	if (paths.length === 0) {
+		throw new Error("Failed to find an MPLABX Makefile");
+	} else if (paths.length === 1) {
+		path = new Promise(() => paths[0]);
+	} else {
+		path = vscode.window.showQuickPick(paths, { canPickMany: false });
+	}
+	return await path;
 }
 
 export function deactivate() {

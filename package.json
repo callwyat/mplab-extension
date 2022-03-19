@@ -67,7 +67,10 @@
     "onDebugDynamicConfigurations:mock",
     "onCommand:extension.mock-debug.getProgramName",
     "onCommand:extension.mock-debug.runEditorContents",
-    "onCommand:extension.mock-debug.debugEditorContents"
+    "onCommand:extension.mock-debug.debugEditorContents",
+    "onCommand:extension.vslabx.getMplabxInstallLocation",
+    "onCommand:extension.vslabx.build",
+    "onCommand:workbench.action.tasks.runTask"
   ],
   "workspaceTrust": {
     "request": "never"
@@ -121,6 +124,10 @@
       {
         "command": "extension.mock-debug.toggleFormatting",
         "title": "Toggle between decimal and hex formatting"
+      },
+      {
+        "command": "extension.vslabx.build",
+        "title": "MPLABX: Build Project"
       }
     ],
     "breakpoints": [
@@ -198,7 +205,27 @@
           }
         ],
         "variables": {
-          "AskForProgramName": "extension.mock-debug.getProgramName"
+          "$mplabxInstallLocation": "extension.vslabx.getMplabxInstallLocation"
+        }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "mplabx",
+        "required": [
+          "task",
+          "projectFolder"
+        ],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "The task that needs preformed",
+            "enum": ["build"]
+          },
+          "projectFolder": {
+            "type": "string",
+            "description": "The absolute path to the Project Folder to make"
+          }
         }
       }
     ]

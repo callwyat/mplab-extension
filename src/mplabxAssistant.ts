@@ -5,6 +5,7 @@
 'use strict';
 import { windows, linux, macos } from 'platform-detect';
 import path = require('path');
+import * as vscode from 'vscode';
 
 /** A helper class for finding all the MPLABX things */
 export class MPLABXAssistant {
@@ -64,11 +65,9 @@ export class MPLABXAssistant {
 			}
 
 			if (macos) {
-				result = path.join(result, 'mplab_platform/bin/mdb.sh');
-			} else if (windows) {
-				result = path.join(result, 'mplab_ide\\bin\\mdb.bat');
-			} else if (linux) {
-				result = path.join(result, 'mplab_ide/bin/mdb.sh');
+				result = path.join(result, 'mplab_platform');
+			} else if (windows || linux) {
+				result = path.join(result, 'mplab_ide');
 			} else {
 				throw new Error(`lookup error: unknown operating system. How did you get here...`);
 			}
@@ -79,12 +78,12 @@ export class MPLABXAssistant {
 		return this._mplabxLocation;
 	}
 
-    /** Manually sets the the location of the MPLABX Installation, for those who don't use
-     * the default location
-    */
-    set mplabxLocation(location: string) {
-        this._mplabxLocation = location;
-    }
+	/** Manually sets the the location of the MPLABX Installation, for those who don't use
+	 * the default location
+	*/
+	set mplabxLocation(location: string) {
+		this._mplabxLocation = location;
+	}
 
 	/** Gets the absolute path to the 'bin' folder of the MPLABX location */
 	get mplabxBinPath(): string {
@@ -103,7 +102,7 @@ export class MPLABXAssistant {
 		}
 	}
 
-    /** Gets the absolute path to the Microchip Maker */
+	/** Gets the absolute path to the Microchip Maker */
 	get mplabxMakePath(): string {
 
 		if (macos || linux) {
@@ -114,5 +113,28 @@ export class MPLABXAssistant {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
 	}
-    
+
+	public async findMplabxProjectFolders(token?: vscode.CancellationToken): Promise<string[]> {
+		return vscode.workspace.findFiles('**/Makefile', "", 20, token)
+			.then((uris) => uris.filter((uri) => uri.path.includes(".X")))
+			.then((us) => us.map((u) => {
+				let path: string = u.fsPath.replace("Makefile", "");
+				return path.substring(0, path.length - 1);
+			}));
+	}
+
+	public getBuildTask(definition: MpmakeTaskDefinition,
+		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+		return new vscode.Task(
+			definition,
+			scope ?? vscode.TaskScope.Workspace,
+			'Build',
+			'MPLABX Make',
+			new vscode.ShellExecution(this.mplabxMakePath, { cwd: definition.projectFolder })
+		);
+	}
+}
+
+export interface MpmakeTaskDefinition extends vscode.TaskDefinition {
+	projectFolder: string;
 }

@@ -11,6 +11,7 @@
     // Project specific spelling
     "cSpell.words": [
         "mplab",
-        "mplabx"
+        "mplabx",
+        "vslabx"
     ]
 }
