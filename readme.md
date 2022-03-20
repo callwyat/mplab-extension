@@ -1,6 +1,6 @@
 # VSLABX (MPLABX Extension)
 
-An extension that enables building, programing, and debugging MPLABX
+An extension that enables building, ~~programing~~, and ~~debugging~~ MPLABX
 projects from within Visual Studio Code
 
 ## VSLABX Prerequisites
