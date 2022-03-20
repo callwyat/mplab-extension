@@ -24,7 +24,7 @@ import { platform } from 'process';
 import { ProviderResult } from 'vscode';
 import { MockDebugSession } from './mockDebug';
 import { activateMockDebug, workspaceFileAccessor } from './activateMockDebug';
-import { MPLABXAssistant, MpmakeTaskDefinition } from './MPLABXAssistant';
+import { MPLABXAssistant, MpmakeTaskDefinition } from './mplabxAssistant';
 
 /*
  * The compile time flag 'runMode' controls how the debug adapter is run.
