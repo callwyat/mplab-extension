@@ -159,6 +159,7 @@ export class MPLABXAssistant {
 		}
 	}
 
+	/** Gets the Microchip Debugger Process */
 	private get mdbProcess(): ChildProcess {
 
 		if (this.disposed) {
@@ -168,6 +169,9 @@ export class MPLABXAssistant {
 		return this._mdbProcess;
 	}
 
+	/** Writes the given command to the Microchip Debugger
+	 * @param input The command to send
+	 */
 	private writeToDebugger(input: string) {
 		if (this.mdbProcess.stdin) {
 			this.mdbProcess.stdin.write(input + '\r\n');
@@ -177,6 +181,7 @@ export class MPLABXAssistant {
 		}
 	}
 
+	/** Reads a single line from the Microchip Debugger */
 	private async readLineFromDebugger(): Promise<string> {
 		if (this.mdbProcess.stdout) {
 
@@ -189,6 +194,7 @@ export class MPLABXAssistant {
 		}
 	}
 
+	/** Reads the whole response to a command from the Microchip Debugger */
 	private async readResultFromDebugger(): Promise<string> {
 
 		let result: string = '';
@@ -199,6 +205,9 @@ export class MPLABXAssistant {
 		return result;
 	}
 
+	/** Sends a command to the Microchip Debugger and returns the whole response
+	 * @param input The command to send to the debugger
+	 */
 	private async queryFromDebugger(input: string): Promise<string> {
 
 		return this._mdbMutex.runExclusive(() => {
@@ -213,6 +222,9 @@ export class MPLABXAssistant {
 		});
 	}
 
+	/** Finds folders end with ".X" and contain a Makefile  
+	 * @param token An optional cancellation token
+	*/
 	public async findMplabxProjectFolders(token?: vscode.CancellationToken): Promise<string[]> {
 		return vscode.workspace.findFiles('**/Makefile', "", 20, token)
 			.then((uris) => uris.filter((uri) => uri.path.includes(".X")))
@@ -222,6 +234,7 @@ export class MPLABXAssistant {
 			}));
 	}
 
+	/** Returns a task that can build an MPLABX Project */
 	public getBuildTask(definition: MpmakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 		return new vscode.Task(
@@ -233,6 +246,7 @@ export class MPLABXAssistant {
 		);
 	}
 
+	/** Gets a list of all the attached hardware tools that can program */
 	public async getAttachedProgramers(): Promise<string[]> {
 
 		return this.queryFromDebugger("hwtool").then((value) => {
@@ -255,6 +269,7 @@ export class MPLABXAssistant {
 		});
 	}
 
+	/** Disposes the assistant */
 	public dispose() {
 		this.disposed = true;
 		if (this._mdbProcess) {
