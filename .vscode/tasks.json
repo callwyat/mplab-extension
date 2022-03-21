@@ -19,6 +19,12 @@
             "problemMatcher": "$esbuild-watch",
             "isBackground": true,
             "label": "npm: watch"
+        },
+        {
+            "label": "Publish",
+            "type": "shell",
+            "command": "vsce",
+            "args": ["publish"]
         }
     ]
 }
