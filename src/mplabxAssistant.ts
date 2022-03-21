@@ -235,7 +235,7 @@ export class MPLABXAssistant {
 	}
 
 	/** Returns a task that can build an MPLABX Project */
-	public getBuildTask(definition: MpmakeTaskDefinition,
+	public getBuildTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 		return new vscode.Task(
 			definition,
@@ -278,6 +278,7 @@ export class MPLABXAssistant {
 	}
 }
 
-export interface MpmakeTaskDefinition extends vscode.TaskDefinition {
+export interface MpMakeTaskDefinition extends vscode.TaskDefinition {
 	projectFolder: string;
+	configuration?: string;
 }

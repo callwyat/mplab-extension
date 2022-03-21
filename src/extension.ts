@@ -24,7 +24,7 @@ import { platform } from 'process';
 import { ProviderResult } from 'vscode';
 import { MockDebugSession } from './mockDebug';
 import { activateMockDebug, workspaceFileAccessor } from './activateMockDebug';
-import { MPLABXAssistant, MpmakeTaskDefinition } from './mplabxAssistant';
+import { MPLABXAssistant, MpMakeTaskDefinition } from './mplabxAssistant';
 
 /*
  * The compile time flag 'runMode' controls how the debug adapter is run.
@@ -67,10 +67,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 		vscode.commands.registerCommand('extension.vslabx.build', () => {
 
-			selectMplabxProjectFolder().then((p) => {
-				if (p) {
+			selectMplabxProjectFolder().then((projectPath) => {
+				if (projectPath) {
 					vscode.tasks.executeTask(mplabxAssistant.getBuildTask({
-						projectFolder: p,
+						projectFolder: projectPath,
 						type: 'build'
 					}));
 				}
@@ -101,7 +101,7 @@ export function activate(context: vscode.ExtensionContext) {
 			resolveTask(_task: vscode.Task): vscode.Task | undefined {
 				const task = _task.definition.task;
 				if (task) {
-					const definition: MpmakeTaskDefinition = <any>_task.definition;
+					const definition: MpMakeTaskDefinition = <any>_task.definition;
 
 					if (task === "build") {
 						// resolveTask requires that the same definition object be used.
@@ -116,16 +116,18 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 async function selectMplabxProjectFolder(): Promise<string | undefined> {
-	const paths = await mplabxAssistant.findMplabxProjectFolders();
-	let path: Thenable<string | undefined>;
-	if (paths.length === 0) {
-		throw new Error("Failed to find an MPLABX Makefile");
-	} else if (paths.length === 1) {
-		path = new Promise(() => paths[0]);
-	} else {
-		path = vscode.window.showQuickPick(paths, { canPickMany: false });
-	}
-	return await path;
+
+	return mplabxAssistant.findMplabxProjectFolders().then((paths) => {
+
+		if (paths.length === 0) {
+			throw new Error("Failed to find an MPLABX Makefile");
+		} else if (paths.length === 1) {
+			return paths[0];
+		} else {
+			return vscode.window.showQuickPick(paths, { canPickMany: false });
+		}
+	});
+
 }
 
 export function deactivate() {

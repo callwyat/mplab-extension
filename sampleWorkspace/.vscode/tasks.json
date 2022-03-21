@@ -7,7 +7,12 @@
             "label": "MPLABX Build",
             "type": "mplabx",
             "task": "build",
-            "projectFolder": "${workspaceFolder}",
+            "projectFolder": "${workspaceFolder}/TestProject.X",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }
