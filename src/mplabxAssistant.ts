@@ -5,11 +5,18 @@
 'use strict';
 import { windows, linux, macos } from 'platform-detect';
 import path = require('path');
+import { ChildProcess, spawn } from 'child_process';
+import { Mutex } from 'async-mutex';
 import * as vscode from 'vscode';
 
 /** A helper class for finding all the MPLABX things */
 export class MPLABXAssistant {
 
+	private disposed: boolean = false;
+	private _mdbProcess: ChildProcess;
+	private _vscodeMdbOutput: vscode.OutputChannel;
+	private _mdbMutex: Mutex = new Mutex();
+	
 	private version: string | undefined;
 
 	/**
@@ -18,6 +25,28 @@ export class MPLABXAssistant {
 	 */
 	constructor(version?: string) {
 		this.version = version;
+
+		{
+			this._mdbProcess = spawn(this.mplabxDebuggerPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+			this._vscodeMdbOutput = vscode.window.createOutputChannel('MPLABX Debugger');
+
+			this._vscodeMdbOutput?.appendLine(`--- Started Microchip Debugger ---`);
+
+			this._mdbProcess.stderr?.on('data', (error) => {
+				this._vscodeMdbOutput.appendLine(`[Error] ${error}`);
+			});
+
+			this._mdbProcess.stdout?.on('data', (data: String) => {
+				this._vscodeMdbOutput?.append(`${data}`);
+			});
+
+			this._mdbProcess.on('close', (code) => {
+				this._vscodeMdbOutput?.appendLine(`--- Microchip Debugger exited with code ${code} ---`);
+			});
+
+			// Wait for the Microchip Debugger to start up.
+			this._mdbMutex.runExclusive(() => this.readResultFromDebugger());
+		}
 	}
 
 	private _mplabxLocation: string = '';
@@ -114,6 +143,76 @@ export class MPLABXAssistant {
 		}
 	}
 
+	/** Gets the absolute path to the Microchip IPECMD */
+	get mplabxIpecmdPath(): string {
+
+		const ipePath: string = path.join(this.mplabxLocation, 'mplab_ipe');
+		if (macos) {
+			return path.join(ipePath, 'bin', 'ipecmd.sh');
+		} else if (linux) {
+			// TODO: This will probably not work
+			return `java -jar "${path.join(ipePath, 'ipecmd.jar')}"`;
+		} else if (windows) {
+			return path.join(ipePath, 'ipecmd.exe');
+		} else {
+			throw new Error(`lookup error: unknown operating system.`);
+		}
+	}
+
+	private get mdbProcess(): ChildProcess {
+
+		if (this.disposed) {
+			throw new Error('Attempted to use MPLAB Assistant after being disposed');
+		}
+
+		return this._mdbProcess;
+	}
+
+	private writeToDebugger(input: string) {
+		if (this.mdbProcess.stdin) {
+			this.mdbProcess.stdin.write(input + '\r\n');
+			this._vscodeMdbOutput?.appendLine(input);
+		} else {
+			throw new Error('Microchip Debugger missing a standard input');
+		}
+	}
+
+	private async readLineFromDebugger(): Promise<string> {
+		if (this.mdbProcess.stdout) {
+
+			return new Promise((resolve, reject) => {
+				this.mdbProcess.stdout?.once('data', resolve);
+			});
+		}
+		else {
+			throw new Error('Microchip Debugger is missing a standard output');
+		}
+	}
+
+	private async readResultFromDebugger(): Promise<string> {
+
+		let result: string = '';
+		do {
+			result += await this.readLineFromDebugger();
+		} while (!result.endsWith('>'));
+
+		return result;
+	}
+
+	private async queryFromDebugger(input: string): Promise<string> {
+
+		return this._mdbMutex.runExclusive(() => {
+			// Read off any data that may be sitting in the buffer.
+			if (this.mdbProcess.stdout?.readableLength ?? 0 > 0) {
+				this.mdbProcess.stdout?.read();
+			}
+
+			this.writeToDebugger(input);
+
+			return this.readResultFromDebugger();
+		});
+	}
+
 	public async findMplabxProjectFolders(token?: vscode.CancellationToken): Promise<string[]> {
 		return vscode.workspace.findFiles('**/Makefile', "", 20, token)
 			.then((uris) => uris.filter((uri) => uri.path.includes(".X")))
@@ -132,6 +231,35 @@ export class MPLABXAssistant {
 			'MPLABX Make',
 			new vscode.ShellExecution(this.mplabxMakePath, { cwd: definition.projectFolder })
 		);
+	}
+
+	public async getAttachedProgramers(): Promise<string[]> {
+
+		return this.queryFromDebugger("hwtool").then((value) => {
+
+			let lines: string[] = value.split('\n');
+
+			// Skip the first line
+			lines.shift();
+
+			// Removed the last two elements
+			lines.pop();
+			lines.pop();
+
+			lines.forEach((v, index) => {
+				let cells = v.split('\t');
+				v = cells[cells.length - 1];
+			});
+
+			return lines;
+		});
+	}
+
+	public dispose() {
+		this.disposed = true;
+		if (this._mdbProcess) {
+			this.writeToDebugger('quit');
+		}
 	}
 }
 

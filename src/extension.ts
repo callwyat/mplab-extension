@@ -77,6 +77,23 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 		}),
 
+		vscode.commands.registerCommand('extension.vslabx.listProgramers', () => {
+
+			vscode.window.withProgress({
+					cancellable: false,
+					location: vscode.ProgressLocation.Notification,
+					title: 'Scanning for programers',
+				},
+				() => mplabxAssistant.getAttachedProgramers().then((tools) => {
+
+					if (tools.length === 0) {
+						vscode.window.showInformationMessage('No programers found');
+					} else {
+						vscode.window.showQuickPick(tools, { canPickMany: false });
+					}
+				}));
+		}),
+
 		vscode.tasks.registerTaskProvider('mplabx', {
 			provideTasks(token?: vscode.CancellationToken) {
 				return [];
@@ -112,7 +129,7 @@ async function selectMplabxProjectFolder(): Promise<string | undefined> {
 }
 
 export function deactivate() {
-	// nothing to do
+	mplabxAssistant.dispose();
 }
 
 class DebugAdapterExecutableFactory implements vscode.DebugAdapterDescriptorFactory {

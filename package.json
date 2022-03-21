@@ -49,19 +49,21 @@
     "@typescript-eslint/parser": "^5.12.0",
     "@vscode/debugadapter": "^1.55.0-pre.1",
     "@vscode/debugadapter-testsupport": "^1.55.0-pre.1",
+    "async-mutex": "^0.3.2",
     "await-notify": "1.0.1",
     "base64-js": "^1.5.1",
+    "child_process": "^1.0.2",
     "esbuild": "^0.14.21",
     "eslint": "^8.9.0",
     "events": "^3.3.0",
     "glob": "^7.2.0",
     "mocha": "^9.2.0",
     "path-browserify": "^1.0.1",
+    "platform-detect": "^3.0.1",
     "rimraf": "^3.0.2",
     "typescript": "^4.5.5",
     "url": "^0.11.0",
-    "vsce": "^2.6.7",
-    "platform-detect": "^3.0.1"
+    "vsce": "^2.6.7"
   },
   "main": "./dist/extension.js",
   "activationEvents": [
@@ -71,6 +73,7 @@
     "onCommand:extension.mock-debug.runEditorContents",
     "onCommand:extension.mock-debug.debugEditorContents",
     "onCommand:extension.vslabx.getMplabxInstallLocation",
+    "onCommand:extension.vslabx.listProgramers",
     "onCommand:extension.vslabx.build",
     "onCommand:workbench.action.tasks.runTask"
   ],
@@ -130,6 +133,10 @@
       {
         "command": "extension.vslabx.build",
         "title": "MPLABX: Build Project"
+      },
+      {
+        "command": "extension.vslabx.listProgramers",
+        "title": "MPLABX: List Programers"
       }
     ],
     "breakpoints": [
