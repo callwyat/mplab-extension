@@ -6,6 +6,7 @@
 import { windows, linux, macos } from 'platform-detect';
 import path = require('path');
 import fs = require('fs');
+import xml2js = require('xml2js');
 import { ChildProcess, spawn } from 'child_process';
 import { Mutex } from 'async-mutex';
 import * as vscode from 'vscode';
@@ -17,7 +18,7 @@ export class MPLABXAssistant {
 	private _mdbProcess: ChildProcess;
 	private _vscodeMdbOutput: vscode.OutputChannel;
 	private _mdbMutex: Mutex = new Mutex();
-	
+
 	private version: string | undefined;
 
 	/**
@@ -285,6 +286,75 @@ export class MPLABXAssistant {
 		});
 	}
 
+	public async readConfigFile(projectPath: string): Promise<any> {
+
+		let configPath: string = path.join(projectPath, 'nbproject', 'configurations.xml');
+
+		const { promises: { readFile } } = require("fs");
+
+		return readFile(configPath).then((data) => {
+			var parser = new xml2js.Parser();
+
+			return parser.parseStringPromise(data);
+		});
+	}
+
+	public async programDevice(projectPath: string, conf): Promise<string | undefined> {
+
+		this._vscodeMdbOutput.show(true);
+
+		let device: string = conf.toolsSet[0].targetDevice[0];
+
+		// 0       PICkit 3(BUR144774925)
+		let toolType: string = 'PICkit3';
+
+		let pathParts: Array<string> = projectPath.split('/');
+		let projectName = pathParts[pathParts.length - 1];
+
+		let hexPath: string = path.join(projectPath, 'dist', conf.$.name, 'production', `${projectName}.production.hex`);
+
+		return this.queryFromDebugger(`Device ${device}`).then((deviceResponse: String) => {
+
+			deviceResponse = deviceResponse.replace('>', '').trim();
+			if (deviceResponse === '')
+			{
+				let pTool = conf.toolsSet[0].platformTool[0];
+				if (conf[pTool])
+				{
+					conf[pTool][0].property.forEach((pair) => {
+						let key: string = pair.$.key;
+						// Keys with a capital value don't work
+						if (key[0].toLowerCase() === key[0]){
+							let value: string = pair.$.value;
+
+							// Values with '{' in it, needs resolved... idk how to do
+							if (!value.includes('{') && value.length > 0){
+								this.queryFromDebugger(`set ${key} ${value}`);
+							}
+						}
+					});
+				}
+
+				return this.queryFromDebugger(`Hwtool ${toolType} -p`)
+				.then((toolResponse: string) => {
+					// TODO: Make sure the attach was successful
+					if (toolResponse.includes(`Target device ${device} found.`)) {
+						return this.queryFromDebugger(`Program "${hexPath}"`)
+							.then((result) => {
+								let r: string[] = result.split('\n');
+								return r[r.length - 1];
+							});
+					} else {
+						return `Error selecting programmer: ${toolResponse}`;
+					}
+				});
+			} else {
+				return `Error selecting target device: ${deviceResponse}`;
+			}
+			
+		});
+	}
+
 	/** Disposes the assistant */
 	public dispose() {
 		this.disposed = true;
@@ -297,4 +367,8 @@ export class MPLABXAssistant {
 export interface MpMakeTaskDefinition extends vscode.TaskDefinition {
 	projectFolder: string;
 	configuration?: string;
+}
+
+export interface MpProgramTaskDefinition extends MpMakeTaskDefinition {
+	hexFile: string;
 }

@@ -58,9 +58,9 @@ export function activate(context: vscode.ExtensionContext) {
 			activateMockDebug(context);
 			break;
 	}
-	
+
 	context.subscriptions.push(
-		
+
 		vscode.commands.registerCommand('extension.vslabx.getMplabxInstallLocation', config => {
 			return new MPLABXAssistant().mplabxFolder;
 		}),
@@ -80,10 +80,10 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('extension.vslabx.listProgramers', () => {
 
 			vscode.window.withProgress({
-					cancellable: false,
-					location: vscode.ProgressLocation.Notification,
-					title: 'Scanning for programers',
-				},
+				cancellable: false,
+				location: vscode.ProgressLocation.Notification,
+				title: 'Scanning for programers',
+			},
 				() => mplabxAssistant.getAttachedProgramers().then((tools) => {
 
 					if (tools.length === 0) {
@@ -93,6 +93,47 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 				}));
 		}),
+
+		vscode.commands.registerCommand('extension.vslabx.program', () => {
+
+			selectMplabxProjectFolder().then((projectPath) => {
+				if (projectPath) {
+					vscode.tasks.executeTask(mplabxAssistant.getBuildTask({
+						projectFolder: projectPath,
+						type: 'build'
+					})).then(() => {
+						return mplabxAssistant.readConfigFile(projectPath);
+					}).then((config) => {
+						let confs: Array<any> = config.configurationDescriptor.confs;
+
+						let conf: any;
+
+						if (confs.length > 1) {
+							let names: Array<string> = new Array<string>();
+
+							confs.forEach((value) => {
+								names.push(value.conf[0].$.name);
+							});
+
+							let selectedName = vscode.window.showQuickPick(names);
+
+							conf = confs.find((value) =>
+								value.conf[0].$.name === selectedName).conf[0];
+
+						} else {
+							conf = confs[0].conf[0];
+						}
+
+						return conf;
+					}).then((conf) => {
+						mplabxAssistant.programDevice(projectPath, conf);
+					});
+				}
+
+				return projectPath;
+			});
+		}),
+
 
 		vscode.tasks.registerTaskProvider('mplabx', {
 			provideTasks(token?: vscode.CancellationToken) {
