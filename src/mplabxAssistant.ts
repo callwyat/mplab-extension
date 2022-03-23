@@ -252,7 +252,12 @@ export class MPLABXAssistant {
 			scope ?? vscode.TaskScope.Workspace,
 			'Build',
 			'MPLABX Make',
-			new vscode.ShellExecution(this.mplabxMakePath, { cwd: definition.projectFolder })
+			new vscode.ShellExecution(this.mplabxMakePath,
+				 { 
+					cwd: definition.projectFolder ,
+					executable: windows ? 'cmd' : undefined,
+					shellArgs: windows ? ['/d', '/c'] : undefined 
+				})
 		);
 	}
 
