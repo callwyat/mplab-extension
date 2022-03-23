@@ -62,7 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		
 		vscode.commands.registerCommand('extension.vslabx.getMplabxInstallLocation', config => {
-			return new MPLABXAssistant().mplabxLocation;
+			return new MPLABXAssistant().mplabxFolder;
 		}),
 
 		vscode.commands.registerCommand('extension.vslabx.build', () => {

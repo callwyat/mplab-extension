@@ -5,6 +5,7 @@
 'use strict';
 import { windows, linux, macos } from 'platform-detect';
 import path = require('path');
+import fs = require('fs');
 import { ChildProcess, spawn } from 'child_process';
 import { Mutex } from 'async-mutex';
 import * as vscode from 'vscode';
@@ -52,17 +53,17 @@ export class MPLABXAssistant {
 	private _mplabxLocation: string = '';
 
 	/** Finds the absolute path to the latest installed version of MPLABX */
-	get mplabxLocation(): string {
+	get mplabxFolder(): string {
 
 		if (this._mplabxLocation === '') {
-			var path = require('path');
-			var fs = require('fs');
-
 			let result = '' as string;
 			if (macos) {
 				result = '/Applications/microchip/mplabx';
 			} else if (windows) {
-				result = 'c:\\Program Files (x86)\\Microchip\\MPLABX';
+				result = 'c:\\Program Files\\Microchip\\MPLABX';
+				if (!fs.existsSync(result)) {
+					result = 'c:\\Program Files (x86)\\Microchip\\MPLABX';
+				}
 			} else if (linux) {
 				result = '/opt/microchip/mplabx';
 			} else {
@@ -93,14 +94,6 @@ export class MPLABXAssistant {
 				}
 			}
 
-			if (macos) {
-				result = path.join(result, 'mplab_platform');
-			} else if (windows || linux) {
-				result = path.join(result, 'mplab_ide');
-			} else {
-				throw new Error(`lookup error: unknown operating system. How did you get here...`);
-			}
-
 			this._mplabxLocation = result;
 		}
 
@@ -110,22 +103,39 @@ export class MPLABXAssistant {
 	/** Manually sets the the location of the MPLABX Installation, for those who don't use
 	 * the default location
 	*/
-	set mplabxLocation(location: string) {
+	set mplabxFolder(location: string) {
 		this._mplabxLocation = location;
+		this._mplabxPlatformFolder = undefined;
 	}
 
-	/** Gets the absolute path to the 'bin' folder of the MPLABX location */
-	get mplabxBinPath(): string {
-		return path.join(this.mplabxLocation, 'bin');
+	private _mplabxPlatformFolder: string | undefined;
+
+	get mplabxPlatformFolder(): string {
+
+		if (!this._mplabxPlatformFolder){
+			let result = this.mplabxFolder;
+
+			if (fs.existsSync(path.join(result, 'mplab_platform'))){
+				result = path.join(result, 'mplab_platform');
+			} else if (fs.existsSync(path.join(result, 'mplab_ide'))){
+				result = path.join(result, 'mplab_ide');
+			} else {
+				throw new Error(`lookup error: failed to find an MPLABX installation`);
+			}
+
+			this._mplabxPlatformFolder = result;
+		}
+
+		return this._mplabxPlatformFolder;
 	}
 
 	/** Gets the absolute path to the Microchip Debugger */
 	get mplabxDebuggerPath(): string {
 
 		if (macos || linux) {
-			return `"${path.join(this.mplabxBinPath, 'mdb.sh')}"`;
+			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'mdb.sh')}"`;
 		} else if (windows) {
-			return `"${path.join(this.mplabxBinPath, 'mdb.bat')}"`;
+			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'mdb.bat')}"`;
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
@@ -135,9 +145,9 @@ export class MPLABXAssistant {
 	get mplabxMakePath(): string {
 
 		if (macos || linux) {
-			return `"${path.join(this.mplabxBinPath, 'make')}"`;
+			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'make')}"`;
 		} else if (windows) {
-			return `"${path.join(this.mplabxBinPath, 'make.exe')}"`;
+			return `"${path.join(this.mplabxFolder, 'gnuBins', 'gnuWin32', 'bin', 'make.exe')}"`;
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
@@ -146,7 +156,7 @@ export class MPLABXAssistant {
 	/** Gets the absolute path to the Microchip IPECMD */
 	get mplabxIpecmdPath(): string {
 
-		const ipePath: string = path.join(this.mplabxLocation, 'mplab_ipe');
+		const ipePath: string = path.join(this.mplabxFolder, 'mplab_ipe');
 		if (macos) {
 			return `"${path.join(ipePath, 'bin', 'ipecmd.sh')}"`;
 		} else if (linux) {
