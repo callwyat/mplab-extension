@@ -123,9 +123,9 @@ export class MPLABXAssistant {
 	get mplabxDebuggerPath(): string {
 
 		if (macos || linux) {
-			return path.join(this.mplabxBinPath, 'mdb.sh');
+			return `"${path.join(this.mplabxBinPath, 'mdb.sh')}"`;
 		} else if (windows) {
-			return path.join(this.mplabxBinPath, 'mdb.bat');
+			return `"${path.join(this.mplabxBinPath, 'mdb.bat')}"`;
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
@@ -135,9 +135,9 @@ export class MPLABXAssistant {
 	get mplabxMakePath(): string {
 
 		if (macos || linux) {
-			return path.join(this.mplabxBinPath, 'make');
+			return `"${path.join(this.mplabxBinPath, 'make')}"`;
 		} else if (windows) {
-			return path.join(this.mplabxBinPath, 'make.exe');
+			return `"${path.join(this.mplabxBinPath, 'make.exe')}"`;
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
@@ -148,12 +148,12 @@ export class MPLABXAssistant {
 
 		const ipePath: string = path.join(this.mplabxLocation, 'mplab_ipe');
 		if (macos) {
-			return path.join(ipePath, 'bin', 'ipecmd.sh');
+			return `"${path.join(ipePath, 'bin', 'ipecmd.sh')}"`;
 		} else if (linux) {
 			// TODO: This will probably not work
 			return `java -jar "${path.join(ipePath, 'ipecmd.jar')}"`;
 		} else if (windows) {
-			return path.join(ipePath, 'ipecmd.exe');
+			return `"${path.join(ipePath, 'ipecmd.exe')}"`;
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
