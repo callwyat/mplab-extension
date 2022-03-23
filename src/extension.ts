@@ -102,31 +102,7 @@ export function activate(context: vscode.ExtensionContext) {
 						projectFolder: projectPath,
 						type: 'build'
 					})).then(() => {
-						return mplabxAssistant.readConfigFile(projectPath);
-					}).then((config) => {
-						let confs: Array<any> = config.configurationDescriptor.confs;
-
-						let conf: any;
-
-						if (confs.length > 1) {
-							let names: Array<string> = new Array<string>();
-
-							confs.forEach((value) => {
-								names.push(value.conf[0].$.name);
-							});
-
-							let selectedName = vscode.window.showQuickPick(names);
-
-							conf = confs.find((value) =>
-								value.conf[0].$.name === selectedName).conf[0];
-
-						} else {
-							conf = confs[0].conf[0];
-						}
-
-						return conf;
-					}).then((conf) => {
-						mplabxAssistant.programDevice(projectPath, conf);
+						mplabxAssistant.programDevice(projectPath);
 					});
 				}
 

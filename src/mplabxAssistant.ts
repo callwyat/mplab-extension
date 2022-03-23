@@ -299,59 +299,72 @@ export class MPLABXAssistant {
 		});
 	}
 
-	public async programDevice(projectPath: string, conf): Promise<string | undefined> {
+	/** A dictionary translating Configuration tool names to MDB tool names */
+	private confToMdBNames = {
+		"PICkit3PlatformTool": "PICKit3",
+		"pk4hybrid": "PICKit4"
+	};
+
+	public async programDevice(projectPath: string, configuration = 'default', production = true): Promise<string | undefined> {
 
 		this._vscodeMdbOutput.show(true);
 
-		let device: string = conf.toolsSet[0].targetDevice[0];
+		return this.readConfigFile(projectPath).then((config) => {
+			// Get the active configuration
+			const confs: Array<any> = config.configurationDescriptor.confs;
+			return confs.find((value) => value.conf[0].$.name === configuration).conf[0];
 
-		// 0       PICkit 3(BUR144774925)
-		let toolType: string = 'PICkit3';
+		}).then((conf) => {
+			const device: string = conf.toolsSet[0].targetDevice[0];
 
-		let pathParts: Array<string> = projectPath.split('/');
-		let projectName = pathParts[pathParts.length - 1];
+			const pathParts: Array<string> = projectPath.split('/');
+			const projectName = pathParts[pathParts.length - 1];
 
-		let hexPath: string = path.join(projectPath, 'dist', conf.$.name, 'production', `${projectName}.production.hex`);
+			const prodOrDebug: string = (production ? 'production' : 'debug');
 
-		return this.queryFromDebugger(`Device ${device}`).then((deviceResponse: String) => {
+			const hexPath: string = path.join(projectPath, 'dist', conf.$.name, prodOrDebug, `${projectName}.${prodOrDebug}.hex`);
 
-			deviceResponse = deviceResponse.replace('>', '').trim();
-			if (deviceResponse === '')
-			{
-				let pTool = conf.toolsSet[0].platformTool[0];
-				if (conf[pTool])
-				{
-					conf[pTool][0].property.forEach((pair) => {
-						let key: string = pair.$.key;
-						// Keys with a capital value don't work
-						if (key[0].toLowerCase() === key[0]){
-							let value: string = pair.$.value;
+			return this.queryFromDebugger(`Device ${device}`).then((deviceResponse: String) => {
 
-							// Values with '{' in it, needs resolved... idk how to do
-							if (!value.includes('{') && value.length > 0){
-								this.queryFromDebugger(`set ${key} ${value}`);
+				deviceResponse = deviceResponse.replace('>', '').trim();
+				if (deviceResponse === '') {
+					const pTool = conf.toolsSet[0].platformTool[0];
+
+					if (conf[pTool]) {
+						conf[pTool][0].property.forEach((pair) => {
+							const key: string = pair.$.key;
+							// Keys with a capital value don't work
+							if (key[0].toLowerCase() === key[0]) {
+								const value: string = pair.$.value;
+
+								// Values with '{' in it, needs resolved... idk how to do
+								if (!value.includes('{') && value.length > 0) {
+									this.queryFromDebugger(`set ${key} ${value}`);
+								}
 							}
-						}
-					});
-				}
-
-				return this.queryFromDebugger(`Hwtool ${toolType} -p`)
-				.then((toolResponse: string) => {
-					// TODO: Make sure the attach was successful
-					if (toolResponse.includes(`Target device ${device} found.`)) {
-						return this.queryFromDebugger(`Program "${hexPath}"`)
-							.then((result) => {
-								let r: string[] = result.split('\n');
-								return r[r.length - 1];
-							});
-					} else {
-						return `Error selecting programmer: ${toolResponse}`;
+						});
 					}
-				});
-			} else {
-				return `Error selecting target device: ${deviceResponse}`;
-			}
-			
+
+					return this.queryFromDebugger(`Hwtool ${this.confToMdBNames[pTool]} -p`)
+						.then((toolResponse: string) => {
+							// TODO: Make sure the attach was successful
+							if (toolResponse.includes(`Target device ${device} found.`)) {
+								return this.queryFromDebugger(`Program "${hexPath}"`)
+									.then((result) => {
+										let r: string[] = result.split('\n');
+										return r[r.length - 1];
+									}).then(() => {
+										this.queryFromDebugger('Continue');
+										return '';
+									});
+							} else {
+								return `Error selecting programmer: ${toolResponse}`;
+							}
+						});
+				} else {
+					return `Error selecting target device: ${deviceResponse}`;
+				}
+			});
 		});
 	}
 
