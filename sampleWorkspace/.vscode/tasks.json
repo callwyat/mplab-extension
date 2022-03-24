@@ -8,7 +8,15 @@
             "type": "mplabx",
             "task": "build",
             "projectFolder": "${workspaceFolder}/TestProject.X",
-            "problemMatcher": [],
+            "problemMatcher": [
+                {
+                    "base": "$gcc",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}/TestProject.X"
+                    ],
+                }
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true

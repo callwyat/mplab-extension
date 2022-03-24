@@ -254,10 +254,11 @@ export class MPLABXAssistant {
 			'MPLABX Make',
 			new vscode.ShellExecution(this.mplabxMakePath,
 				 { 
-					cwd: definition.projectFolder ,
+					cwd: definition.projectFolder,
 					executable: windows ? 'cmd' : undefined,
-					shellArgs: windows ? ['/d', '/c'] : undefined 
-				})
+					shellArgs: windows ? ['/d', '/c'] : undefined
+				}),
+			'$gcc'
 		);
 	}
 
