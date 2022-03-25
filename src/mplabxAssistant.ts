@@ -254,7 +254,7 @@ export class MPLABXAssistant {
 			'Build',
 			'MPLABX Make',
 			new vscode.ShellExecution(this.mplabxMakePath,
-				 { 
+				{
 					cwd: definition.projectFolder,
 					executable: windows ? 'cmd' : undefined,
 					shellArgs: windows ? ['/d', '/c'] : undefined
@@ -299,6 +299,19 @@ export class MPLABXAssistant {
 		});
 	}
 
+	public async readPrivateConfigFile(projectPath: string): Promise<any> {
+
+		let configPath: string = path.join(projectPath, 'nbproject', 'private', 'configurations.xml');
+
+		const { promises: { readFile } } = require("fs");
+
+		return readFile(configPath).then((data) => {
+			var parser = new xml2js.Parser();
+
+			return parser.parseStringPromise(data);
+		});
+	}
+
 	/** A dictionary translating Configuration tool names to MDB tool names */
 	private confToMdBNames = {
 		"PICkit3PlatformTool": "PICKit3",
@@ -307,7 +320,31 @@ export class MPLABXAssistant {
 
 	public async programDevice(projectPath: string, configuration = 'default', production = true): Promise<string | undefined> {
 
-		this._vscodeMdbOutput.show(true);
+		let programMutex = new Mutex();
+		let buildResult: number | undefined = -1;
+
+		// Start up the build
+		programMutex.runExclusive(() => {
+			vscode.tasks.executeTask(this.getBuildTask({
+				projectFolder: projectPath,
+				type: 'build'
+			})).then((execution) => {
+				let disposable = vscode.tasks.onDidEndTaskProcess((e) => {
+					if (e.execution === execution) {
+						disposable.dispose();
+
+						// If the build exited successfully, then we can program
+						if (e.exitCode === 0) {
+							setTimeout(() => {
+								this._vscodeMdbOutput.show(true);
+							}, 2000);
+						}
+
+						buildResult = e.exitCode;
+					}
+				});
+			});
+		});
 
 		return this.readConfigFile(projectPath).then((config) => {
 			// Get the active configuration
@@ -349,14 +386,20 @@ export class MPLABXAssistant {
 						.then((toolResponse: string) => {
 							// TODO: Make sure the attach was successful
 							if (toolResponse.includes(`Target device ${device} found.`)) {
-								return this.queryFromDebugger(`Program "${hexPath}"`)
-									.then((result) => {
-										let r: string[] = result.split('\n');
-										return r[r.length - 1];
-									}).then(() => {
-										this.queryFromDebugger('Continue');
-										return '';
-									});
+								return programMutex.runExclusive(() => {
+									if (buildResult === 0) {
+										return this.queryFromDebugger(`Program "${hexPath}"`)
+											.then((result) => {
+												let r: string[] = result.split('\n');
+												return r[r.length - 1];
+											}).then(() => {
+												this.queryFromDebugger('Reset');
+												return '';
+											});
+									} else {
+										return 'Build Failed';
+									}
+								});
 							} else {
 								return `Error selecting programmer: ${toolResponse}`;
 							}

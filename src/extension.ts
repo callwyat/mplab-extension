@@ -98,15 +98,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 			selectMplabxProjectFolder().then((projectPath) => {
 				if (projectPath) {
-					vscode.tasks.executeTask(mplabxAssistant.getBuildTask({
-						projectFolder: projectPath,
-						type: 'build'
-					})).then(() => {
-						mplabxAssistant.programDevice(projectPath);
-					});
+					mplabxAssistant.programDevice(projectPath);
 				}
-
-				return projectPath;
 			});
 		}),
 
