@@ -29,13 +29,13 @@ export class MPLABXAssistant {
 		this.version = version;
 
 		{
-			this._mdbProcess = spawn(this.mplabxDebuggerPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 			this._vscodeMdbOutput = vscode.window.createOutputChannel('MPLABX Debugger');
-
+			
+			this._mdbProcess = spawn(this.mplabxDebuggerPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 			this._vscodeMdbOutput?.appendLine(`--- Started Microchip Debugger ---`);
 
 			this._mdbProcess.stderr?.on('data', (error) => {
-				this._vscodeMdbOutput.appendLine(`[Error] ${error}`);
+				this._vscodeMdbOutput?.appendLine(`[Error] ${error}`);
 			});
 
 			this._mdbProcess.stdout?.on('data', (data: String) => {
@@ -113,12 +113,12 @@ export class MPLABXAssistant {
 
 	get mplabxPlatformFolder(): string {
 
-		if (!this._mplabxPlatformFolder){
+		if (!this._mplabxPlatformFolder) {
 			let result = this.mplabxFolder;
 
-			if (fs.existsSync(path.join(result, 'mplab_platform'))){
+			if (fs.existsSync(path.join(result, 'mplab_platform'))) {
 				result = path.join(result, 'mplab_platform');
-			} else if (fs.existsSync(path.join(result, 'mplab_ide'))){
+			} else if (fs.existsSync(path.join(result, 'mplab_ide'))) {
 				result = path.join(result, 'mplab_ide');
 			} else {
 				throw new Error(`lookup error: failed to find an MPLABX installation`);
@@ -134,7 +134,7 @@ export class MPLABXAssistant {
 	get mplabxDebuggerPath(): string {
 
 		if (macos || linux) {
-			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'mdb.sh')}"`;
+			return path.join(this.mplabxPlatformFolder, 'bin', 'mdb.sh');
 		} else if (windows) {
 			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'mdb.bat')}"`;
 		} else {
