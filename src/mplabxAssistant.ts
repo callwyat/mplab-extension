@@ -259,7 +259,7 @@ export class MPLABXAssistant {
 					executable: windows ? 'cmd' : undefined,
 					shellArgs: windows ? ['/d', '/c'] : undefined
 				}),
-			'$gcc'
+			'$xc'
 		);
 	}
 

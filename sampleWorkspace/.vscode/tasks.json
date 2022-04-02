@@ -10,7 +10,7 @@
             "projectFolder": "${workspaceFolder}/TestProject.X",
             "problemMatcher": [
                 {
-                    "base": "$gcc",
+                    "base": "$xc",
                     "fileLocation": [
                         "relative",
                         "${workspaceFolder}/TestProject.X"
