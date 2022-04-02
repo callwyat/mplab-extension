@@ -1,8 +1,18 @@
 out
-dist
 node_modules
 .vscode-test/
 npm-debug.log
 mock-debug.txt
 *.vsix
+
+# MacOS Directory folder
 .DS_Store
+
+# MPLABX Build files
+/build/
+/dist/
+
+/nbproject/private/
+/nbproject/Makefile-genesis.properties
+/nbproject/Package-default*
+/nbproject/Makefile-*.mk
