@@ -243,6 +243,10 @@
           "projectFolder": {
             "type": "string",
             "description": "The absolute path to the Project Folder to make"
+          },
+          "configuration": {
+            "type": "string",
+            "description": "The configuration of the project to build"
           }
         }
       }

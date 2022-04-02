@@ -253,8 +253,10 @@ export class MPLABXAssistant {
 			scope ?? vscode.TaskScope.Workspace,
 			'Build',
 			'MPLABX Make',
-			new vscode.ShellExecution(this.mplabxMakePath,
-				{
+			new vscode.ShellExecution(this.mplabxMakePath + 
+				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +
+				" build",
+				 { 
 					cwd: definition.projectFolder,
 					executable: windows ? 'cmd' : undefined,
 					shellArgs: windows ? ['/d', '/c'] : undefined
