@@ -8,7 +8,7 @@
                   "\t\"projectFolder\": \"\\${workspaceFolder}/${1:Path to MPLABX Project}\",",
                   "\t\"problemMatcher\": [",
                   "\t\t{",
-                  "\t\t\t\"base\": \"\\$gcc\",",
+                  "\t\t\t\"base\": \"\\$xc\",",
                   "\t\t\t\"fileLocation\": [",
                   "\t\t\t\t\"relative\",",
                   "\t\t\t\t\"${workspaceFolder\\}/${1}\"",
