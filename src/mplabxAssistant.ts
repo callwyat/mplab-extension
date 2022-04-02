@@ -154,6 +154,17 @@ export class MPLABXAssistant {
 		}
 	}
 
+	/** Gets the path to the script for building all the auto-generated Makefile stuff */
+	get mplabxMakefileGeneratorPath(): string {
+		if (macos || linux) {
+			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'prjMakefilesGenerator.sh')}"`;
+		} else if (windows) {
+			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'prjMakefilesGenerator.bat')}"`;
+		} else {
+			throw new Error(`lookup error: unknown operating system.`);
+		}
+	}
+
 	/** Gets the absolute path to the Microchip IPECMD */
 	get mplabxIpecmdPath(): string {
 
@@ -246,12 +257,30 @@ export class MPLABXAssistant {
 	}
 
 	/** Returns a task that can build an MPLABX Project */
+	public getGenerateMakeFileConfigTask(definition: MpMakeTaskDefinition,
+		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+		return new vscode.Task(
+			definition,
+			scope ?? vscode.TaskScope.Workspace,
+			'Generate',
+			'MPLABX Make',
+			new vscode.ShellExecution(this.mplabxMakefileGeneratorPath + " -v ." +
+				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : ""),
+					{ 
+					cwd: definition.projectFolder,
+					executable: windows ? 'cmd' : undefined,
+					shellArgs: windows ? ['/d', '/c'] : undefined
+				})
+		);
+	}
+
+	/** Returns a task that can build an MPLABX Project */
 	public getCleanTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 		return new vscode.Task(
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
-			'Build',
+			'Clean',
 			'MPLABX Make',
 			new vscode.ShellExecution(this.mplabxMakePath + 
 				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +

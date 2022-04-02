@@ -65,6 +65,18 @@ export function activate(context: vscode.ExtensionContext) {
 			return new MPLABXAssistant().mplabxFolder;
 		}),
 
+		vscode.commands.registerCommand('extension.vslabx.updateMakeFiles', () => {
+
+			selectMplabxProjectFolder().then((projectPath) => {
+				if (projectPath) {
+					vscode.tasks.executeTask(mplabxAssistant.getGenerateMakeFileConfigTask({
+						projectFolder: projectPath,
+						type: 'generate'
+					}));
+				}
+			});
+		}),
+
 		vscode.commands.registerCommand('extension.vslabx.clean', () => {
 
 			selectMplabxProjectFolder().then((projectPath) => {
