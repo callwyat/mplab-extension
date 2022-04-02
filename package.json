@@ -74,6 +74,7 @@
     "onCommand:extension.mock-debug.debugEditorContents",
     "onCommand:extension.vslabx.getMplabxInstallLocation",
     "onCommand:extension.vslabx.listProgramers",
+    "onCommand:extension.vslabx.updateMakeFiles",
     "onCommand:extension.vslabx.clean",
     "onCommand:extension.vslabx.build",
     "onCommand:workbench.action.tasks.runTask"
@@ -130,6 +131,10 @@
       {
         "command": "extension.mock-debug.toggleFormatting",
         "title": "Toggle between decimal and hex formatting"
+      },
+      {
+        "command": "extension.vslabx.updateMakeFiles",
+        "title": "MPLABX: Update private make files"
       },
       {
         "command": "extension.vslabx.clean",
