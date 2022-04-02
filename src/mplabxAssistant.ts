@@ -255,16 +255,24 @@ export class MPLABXAssistant {
 			}));
 	}
 
+
 	/** Returns a task that can build an MPLABX Project */
 	public getGenerateMakeFileConfigTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+
+			let command: string = `${this.mplabxMakefileGeneratorPath} -v ` +
+			(definition.configuration ? (`.@${definition.configuration}\"`) : ".");
+
+			if (windows) {
+				command = `"${command}"`;
+			}
+
 		return new vscode.Task(
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
 			'Generate',
 			'MPLABX Make',
-			new vscode.ShellExecution(this.mplabxMakefileGeneratorPath + " -v ." +
-				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : ""),
+			new vscode.ShellExecution(command,
 					{ 
 					cwd: definition.projectFolder,
 					executable: windows ? 'cmd' : undefined,
@@ -276,14 +284,21 @@ export class MPLABXAssistant {
 	/** Returns a task that can build an MPLABX Project */
 	public getCleanTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+
+			let command: string = this.mplabxMakePath + 
+				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +
+				" clean";
+
+			if (windows) {
+				command = `"${command}"`;
+			}
+
 		return new vscode.Task(
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
 			'Clean',
 			'MPLABX Make',
-			new vscode.ShellExecution(this.mplabxMakePath + 
-				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +
-				" clean",
+			new vscode.ShellExecution(command,
 				 { 
 					cwd: definition.projectFolder,
 					executable: windows ? 'cmd' : undefined,
@@ -295,14 +310,21 @@ export class MPLABXAssistant {
 	/** Returns a task that can build an MPLABX Project */
 	public getBuildTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+
+			let command: string = this.mplabxMakePath + 
+				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +
+				" build";
+
+			if (windows) {
+				command = `"${command}"`;
+			}
+
 		return new vscode.Task(
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
 			'Build',
 			'MPLABX Make',
-			new vscode.ShellExecution(this.mplabxMakePath + 
-				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +
-				" build",
+			new vscode.ShellExecution(command,
 				 { 
 					cwd: definition.projectFolder,
 					executable: windows ? 'cmd' : undefined,
