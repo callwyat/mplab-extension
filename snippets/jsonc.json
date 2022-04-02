@@ -6,6 +6,7 @@
                   "\t\"type\": \"mplabx\",",
                   "\t\"task\": \"build\",",
                   "\t\"projectFolder\": \"\\${workspaceFolder}/${1:Path to MPLABX Project}\",",
+                  "\t\"configuration\": \"default\",",
                   "\t\"problemMatcher\": [",
                   "\t\t{",
                   "\t\t\t\"base\": \"\\$xc\",",

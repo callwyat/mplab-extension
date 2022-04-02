@@ -259,11 +259,9 @@
     ],
     "problemMatchers": [
       {
-        "owner": "xc",
-        "fileLocation": [
-          "relative",
-          "${workspaceRoot}"
-        ],
+        "name": "xc",
+        "owner": "mplab",
+        "fileLocation": ["relative", "${workspaceFolder}"],
         "pattern": {
           "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
           "file": 1,
