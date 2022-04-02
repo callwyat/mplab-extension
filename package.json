@@ -76,6 +76,7 @@
     "onCommand:extension.mock-debug.debugEditorContents",
     "onCommand:extension.vslabx.getMplabxInstallLocation",
     "onCommand:extension.vslabx.listProgramers",
+    "onCommand:extension.vslabx.clean",
     "onCommand:extension.vslabx.build",
     "onCommand:extension.vslabx.program",
     "onCommand:workbench.action.tasks.runTask"
@@ -132,6 +133,10 @@
       {
         "command": "extension.mock-debug.toggleFormatting",
         "title": "Toggle between decimal and hex formatting"
+      },
+      {
+        "command": "extension.vslabx.clean",
+        "title": "MPLABX: Clean Project"
       },
       {
         "command": "extension.vslabx.build",
@@ -237,7 +242,8 @@
             "type": "string",
             "description": "The task that needs preformed",
             "enum": [
-              "build"
+              "build",
+              "clean"
             ]
           },
           "projectFolder": {

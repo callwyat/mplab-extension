@@ -65,6 +65,18 @@ export function activate(context: vscode.ExtensionContext) {
 			return new MPLABXAssistant().mplabxFolder;
 		}),
 
+		vscode.commands.registerCommand('extension.vslabx.clean', () => {
+
+			selectMplabxProjectFolder().then((projectPath) => {
+				if (projectPath) {
+					vscode.tasks.executeTask(mplabxAssistant.getCleanTask({
+						projectFolder: projectPath,
+						type: 'clean'
+					}));
+				}
+			});
+		}),
+
 		vscode.commands.registerCommand('extension.vslabx.build', () => {
 
 			selectMplabxProjectFolder().then((projectPath) => {
@@ -117,6 +129,9 @@ export function activate(context: vscode.ExtensionContext) {
 						// resolveTask requires that the same definition object be used.
 						return mplabxAssistant.getBuildTask(definition, _task.scope);
 
+					} else if (task === "clean") {
+
+						return mplabxAssistant.getCleanTask(definition, _task.scope);
 					}
 				}
 				return undefined;
