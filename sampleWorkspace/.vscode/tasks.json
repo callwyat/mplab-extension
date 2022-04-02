@@ -8,7 +8,7 @@
             "type": "mplabx",
             "task": "build",
             "projectFolder": "${workspaceFolder}/TestProject.X",
-            "configuration": "default", 
+            "configuration": "default",
             "problemMatcher": [
                 {
                     "base": "$xc",
