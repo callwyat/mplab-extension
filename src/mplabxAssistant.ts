@@ -245,6 +245,25 @@ export class MPLABXAssistant {
 	}
 
 	/** Returns a task that can build an MPLABX Project */
+	public getCleanTask(definition: MpMakeTaskDefinition,
+		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+		return new vscode.Task(
+			definition,
+			scope ?? vscode.TaskScope.Workspace,
+			'Build',
+			'MPLABX Make',
+			new vscode.ShellExecution(this.mplabxMakePath + 
+				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +
+				" clean",
+				 { 
+					cwd: definition.projectFolder,
+					executable: windows ? 'cmd' : undefined,
+					shellArgs: windows ? ['/d', '/c'] : undefined
+				})
+		);
+	}
+
+	/** Returns a task that can build an MPLABX Project */
 	public getBuildTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 		return new vscode.Task(
