@@ -1,6 +1,7 @@
-/build/default/
-/dist/default/
-/build/PIC18F46J53/
-/dist/PIC18F46J53/
-/nbproject/private/
+
+/build/
 /dist/
+
+/nbproject/private/
+Makefile-*.mk
+Makefile-*.properties
