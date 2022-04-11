@@ -311,9 +311,11 @@ export class MPLABXAssistant {
 	public getBuildTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 
-			let command: string = this.mplabxMakePath + 
-				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +
-				" build";
+			let config = definition?.configuration ?? "default";
+
+			let debugString = definition?.debug ?? false ? ' TYPE_IMAGE=DEBUG_RUN' : '';
+
+			let command: string = `${this.mplabxMakePath} CONF=\"${config}\"${debugString}`;
 
 			if (windows) {
 				command = `"${command}"`;
@@ -369,4 +371,5 @@ export class MPLABXAssistant {
 export interface MpMakeTaskDefinition extends vscode.TaskDefinition {
 	projectFolder: string;
 	configuration?: string;
+	debug?: boolean;
 }
