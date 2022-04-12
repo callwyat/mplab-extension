@@ -248,10 +248,9 @@ export class MPLABXAssistant {
 	*/
 	public async findMplabxProjectFolders(token?: vscode.CancellationToken): Promise<string[]> {
 		return vscode.workspace.findFiles('**/Makefile', "", 20, token)
-			.then((uris) => uris.filter((uri) => uri.path.includes(".X")))
 			.then((us) => us.map((u) => {
-				let path: string = u.fsPath.replace("Makefile", "");
-				return path.substring(0, path.length - 1);
+				let p: string = u.fsPath.replace("Makefile", "");
+				return p.substring(0, p.length - 1);
 			}));
 	}
 
