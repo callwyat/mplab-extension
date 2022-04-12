@@ -259,7 +259,10 @@
       {
         "name": "xc",
         "owner": "mplab",
-        "fileLocation": ["relative", "${workspaceFolder}"],
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
         "pattern": {
           "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
           "file": 1,
@@ -268,13 +271,40 @@
           "severity": 4,
           "message": 5
         }
+      },
+      {
+        "name": "mpasm",
+        "owner": "mplab",
+        "fileLocation": ["absolute"],
+        "pattern": {
+          "regexp": "(Error|Warning)(\\[\\d+\\])\\s+(.*)\\s(\\d+)\\s:\\s(.*)",
+          "severity": 1,
+          "code": 2,
+          "file": 3,
+          "line": 4,
+          "message": 5
+        }
+      },
+      {
+        "name": "mpasm-msg",
+        "owner": "mplab",
+        "fileLocation": ["absolute"],
+        "severity": "info",
+        "pattern": {
+          "regexp": "(Message)(\\[\\d+\\])\\s+(.*)\\s(\\d+)\\s:\\s(.*)",
+          "severity": 1,
+          "code": 2,
+          "file": 3,
+          "line": 4,
+          "message": 5
+        }
       }
-  ],
-  "snippets": [
-    {
-      "language": "jsonc",
-      "path": "./snippets/jsonc.json"
-    }
-  ]
-}
+    ],
+    "snippets": [
+      {
+        "language": "jsonc",
+        "path": "./snippets/jsonc.json"
+      }
+    ]
+  }
 }

@@ -50,6 +50,13 @@ To create a build task:
     }
     ```
     * If the MPLABX project is not the same as the `workspaceFolder` append the rest of the path to the `projectFolder` item e.g. `"${workspaceFolder}\TestProject.X"`
+    * If building an MPASM project, replace the problem matcher with the following:
+    ```
+    "problemMatcher": [
+                "$mpasm",
+                "$mpasm-msg"
+            ],
+    ```
 * Save the file
 * Run the `Tasks: Run Build Task` command again
     * Press enter to select a build task
