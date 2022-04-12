@@ -1,3 +1,6 @@
+## 0.0.6
+* Removed the requirement for ".X" to be in the path for the build commands
+* Added problem matches for MPASM builds
 ## 0.0.5
 * More work on Windows support
 * Added the `xc` problem matcher to make build errors easier to find
