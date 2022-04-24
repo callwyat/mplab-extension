@@ -67,71 +67,19 @@
   },
   "main": "./dist/extension.js",
   "activationEvents": [
-    "onDebugResolve:mock",
-    "onDebugDynamicConfigurations:mock",
-    "onCommand:extension.mock-debug.getProgramName",
-    "onCommand:extension.mock-debug.runEditorContents",
-    "onCommand:extension.mock-debug.debugEditorContents",
+    "onDebugResolve:mplabx",
     "onCommand:extension.vslabx.getMplabxInstallLocation",
     "onCommand:extension.vslabx.listProgramers",
     "onCommand:extension.vslabx.updateMakeFiles",
     "onCommand:extension.vslabx.clean",
     "onCommand:extension.vslabx.build",
-    "onCommand:workbench.action.tasks.runTask"
+    "workspaceContains:**/nbproject/**"
   ],
   "workspaceTrust": {
     "request": "never"
   },
   "contributes": {
-    "menus": {
-      "editor/title/run": [
-        {
-          "command": "extension.mock-debug.runEditorContents",
-          "when": "resourceLangId == markdown",
-          "group": "navigation@1"
-        },
-        {
-          "command": "extension.mock-debug.debugEditorContents",
-          "when": "resourceLangId == markdown",
-          "group": "navigation@2"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "extension.mock-debug.debugEditorContents",
-          "when": "resourceLangId == markdown"
-        },
-        {
-          "command": "extension.mock-debug.runEditorContents",
-          "when": "resourceLangId == markdown"
-        }
-      ],
-      "debug/variables/context": [
-        {
-          "command": "extension.mock-debug.toggleFormatting",
-          "when": "debugType == 'mock' && debugProtocolVariableMenuContext == 'simple'"
-        }
-      ]
-    },
     "commands": [
-      {
-        "command": "extension.mock-debug.debugEditorContents",
-        "title": "Debug File",
-        "category": "Mock Debug",
-        "enablement": "!inDebugMode",
-        "icon": "$(debug-alt)"
-      },
-      {
-        "command": "extension.mock-debug.runEditorContents",
-        "title": "Run File",
-        "category": "Mock Debug",
-        "enablement": "!inDebugMode",
-        "icon": "$(play)"
-      },
-      {
-        "command": "extension.mock-debug.toggleFormatting",
-        "title": "Toggle between decimal and hex formatting"
-      },
       {
         "command": "extension.vslabx.updateMakeFiles",
         "title": "MPLABX: Update private make files"
@@ -151,16 +99,24 @@
     ],
     "breakpoints": [
       {
-        "language": "markdown"
+        "language": "c++"
+      },
+      {
+        "language": "c"
+      },
+      {
+        "language": "asm"
       }
     ],
     "debuggers": [
       {
-        "type": "mock",
+        "type": "mplabx",
         "languages": [
-          "markdown"
+          "c++",
+          "c",
+          "asm"
         ],
-        "label": "Mock Debug",
+        "label": "MPLABX Debug",
         "program": "./out/debugAdapter.js",
         "runtime": "node",
         "configurationAttributes": {
@@ -171,7 +127,7 @@
             "properties": {
               "program": {
                 "type": "string",
-                "description": "Absolute path to a text file.",
+                "description": "Absolute path to the elf file",
                 "default": "${workspaceFolder}/${command:AskForProgramName}"
               },
               "stopOnEntry": {
@@ -183,39 +139,25 @@
                 "type": "boolean",
                 "description": "Enable logging of the Debug Adapter Protocol.",
                 "default": true
-              },
-              "compileError": {
-                "type": "string",
-                "description": "Simulates a compile error in 'launch' request.",
-                "enum": [
-                  "default",
-                  "show",
-                  "hide"
-                ],
-                "enumDescriptions": [
-                  "default: show fake compile error to user",
-                  "show fake compile error to user",
-                  "do not show fake compile error to user"
-                ]
               }
             }
           }
         },
         "initialConfigurations": [
           {
-            "type": "mock",
+            "type": "mplabx",
             "request": "launch",
-            "name": "Ask for file name",
+            "name": "Ask for Program Name",
             "program": "${workspaceFolder}/${command:AskForProgramName}",
             "stopOnEntry": true
           }
         ],
         "configurationSnippets": [
           {
-            "label": "Mock Debug: Launch",
-            "description": "A new configuration for 'debugging' a user selected markdown file.",
+            "label": "MPLABX Debug: Launch",
+            "description": "A new configuration for debugging an MPLABX Project.",
             "body": {
-              "type": "mock",
+              "type": "mplabx",
               "request": "launch",
               "name": "Ask for file name",
               "program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\"",
