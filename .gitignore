@@ -16,3 +16,5 @@ mock-debug.txt
 /nbproject/Makefile-genesis.properties
 /nbproject/Package-default*
 /nbproject/Makefile-*.mk
+
+/src/archive/

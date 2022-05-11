@@ -69,7 +69,6 @@
   "activationEvents": [
     "onDebugResolve:mplabx",
     "onCommand:extension.vslabx.getMplabxInstallLocation",
-    "onCommand:extension.vslabx.listProgramers",
     "onCommand:extension.vslabx.updateMakeFiles",
     "onCommand:extension.vslabx.clean",
     "onCommand:extension.vslabx.build",
@@ -91,10 +90,6 @@
       {
         "command": "extension.vslabx.build",
         "title": "MPLABX: Build Project"
-      },
-      {
-        "command": "extension.vslabx.listProgramers",
-        "title": "MPLABX: List Programers"
       }
     ],
     "breakpoints": [
@@ -147,8 +142,8 @@
           {
             "type": "mplabx",
             "request": "launch",
-            "name": "Ask for Program Name",
-            "program": "${workspaceFolder}/${command:AskForProgramName}",
+            "name": "MPLABX Debug",
+            "program": "${workspaceFolder}/}",
             "stopOnEntry": true
           }
         ],
@@ -159,8 +154,8 @@
             "body": {
               "type": "mplabx",
               "request": "launch",
-              "name": "Ask for file name",
-              "program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\"",
+              "name": "MPLABX Debug",
+              "program": "^\"\\${workspaceFolder}/\"",
               "stopOnEntry": true
             }
           }

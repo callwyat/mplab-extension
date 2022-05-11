@@ -22,9 +22,10 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { platform } from 'process';
 import { ProviderResult } from 'vscode';
-import { MockDebugSession } from './mockDebug';
-import { activateMockDebug, workspaceFileAccessor } from './activateMockDebug';
+import { MockDebugSession } from './archive/mockDebug';
+import { activateMockDebug, workspaceFileAccessor } from './archive/activateMockDebug';
 import { MPLABXAssistant, MpMakeTaskDefinition } from './mplabxAssistant';
+import { MPLABXPaths } from './common/mplabPaths';
 
 /*
  * The compile time flag 'runMode' controls how the debug adapter is run.
@@ -43,11 +44,6 @@ export function activate(context: vscode.ExtensionContext) {
 			activateMockDebug(context, new MockDebugAdapterServerDescriptorFactory());
 			break;
 
-		case 'namedPipeServer':
-			// run the debug adapter as a server inside the extension and communicate via a named pipe (Windows) or UNIX domain socket (non-Windows)
-			activateMockDebug(context, new MockDebugAdapterNamedPipeServerDescriptorFactory());
-			break;
-
 		case 'external': default:
 			// run the debug adapter as a separate process
 			activateMockDebug(context, new DebugAdapterExecutableFactory());
@@ -62,7 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		
 		vscode.commands.registerCommand('extension.vslabx.getMplabxInstallLocation', config => {
-			return new MPLABXAssistant().mplabxFolder;
+			return new MPLABXPaths().mplabxFolder;
 		}),
 
 		vscode.commands.registerCommand('extension.vslabx.updateMakeFiles', () => {
@@ -99,23 +95,6 @@ export function activate(context: vscode.ExtensionContext) {
 					}));
 				}
 			});
-		}),
-
-		vscode.commands.registerCommand('extension.vslabx.listProgramers', () => {
-
-			vscode.window.withProgress({
-					cancellable: false,
-					location: vscode.ProgressLocation.Notification,
-					title: 'Scanning for programers',
-				},
-				() => mplabxAssistant.getAttachedProgramers().then((tools) => {
-
-					if (tools.length === 0) {
-						vscode.window.showInformationMessage('No programers found');
-					} else {
-						vscode.window.showQuickPick(tools, { canPickMany: false });
-					}
-				}));
 		}),
 
 		vscode.tasks.registerTaskProvider('mplabx', {
@@ -158,7 +137,6 @@ async function selectMplabxProjectFolder(): Promise<string | undefined> {
 }
 
 export function deactivate() {
-	mplabxAssistant.dispose();
 }
 
 class DebugAdapterExecutableFactory implements vscode.DebugAdapterDescriptorFactory {
@@ -214,31 +192,3 @@ class MockDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDesc
 	}
 }
 
-class MockDebugAdapterNamedPipeServerDescriptorFactory implements vscode.DebugAdapterDescriptorFactory {
-
-	private server?: Net.Server;
-
-	createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-
-		if (!this.server) {
-			// start listening on a random named pipe path
-			const pipeName = randomBytes(10).toString('utf8');
-			const pipePath = platform === "win32" ? join('\\\\.\\pipe\\', pipeName) : join(tmpdir(), pipeName);
-
-			this.server = Net.createServer(socket => {
-				const session = new MockDebugSession(workspaceFileAccessor);
-				session.setRunAsServer(true);
-				session.start(<NodeJS.ReadableStream>socket, socket);
-			}).listen(pipePath);
-		}
-
-		// make VS Code connect to debug server
-		return new vscode.DebugAdapterNamedPipeServer(this.server.address() as string);
-	}
-
-	dispose() {
-		if (this.server) {
-			this.server.close();
-		}
-	}
-}

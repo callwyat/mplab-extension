@@ -5,12 +5,11 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"type": "mock",
+			"type": "mplabx",
 			"request": "launch",
-			"name": "Debug readme.md",
-			"program": "${workspaceFolder}/readme.md",
-			"stopOnEntry": true,
-			"trace": false
+			"name": "MPLABX Debug",
+			"program": "${workspaceFolder}/TestProject.X",
+			"stopOnEntry": true
 		}
 	]
 }

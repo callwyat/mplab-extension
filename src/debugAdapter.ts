@@ -2,11 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { MockDebugSession } from './mockDebug';
-
+import { MockDebugSession } from './archive/mockDebug';
 import { promises as fs } from 'fs';
 import * as Net from 'net';
-import { FileAccessor } from './mockRuntime';
+import { FileAccessor } from './archive/mockRuntime';
 
 /*
  * debugAdapter.js is the entrypoint of the debug adapter when it runs as a separate process.

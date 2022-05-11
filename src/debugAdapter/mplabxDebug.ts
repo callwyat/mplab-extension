@@ -19,9 +19,11 @@ import {
 } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { basename } from 'path-browserify';
-import { MockRuntime, IRuntimeBreakpoint, FileAccessor, RuntimeVariable, timeout, IRuntimeVariableType } from './mockRuntime';
 import { Subject } from 'await-notify';
 import * as base64 from 'base64-js';
+import { FileAccessor } from '../common/FileAccessor';
+import { MDBCommunications } from './mdbCommunications';
+import { MPLABXPaths } from '../common/mplabPaths';
 
 /**
  * This interface describes the mock-debug specific launch attributes
@@ -30,26 +32,24 @@ import * as base64 from 'base64-js';
  * The interface should always match this schema.
  */
 interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
-	/** An absolute path to the "program" to debug. */
+	/** An absolute path to the project to debug. */
 	program: string;
+
+    /** The name of the configuration to debug */
+    configuration?: string;
+
 	/** Automatically stop target after launch. If not specified, target does not stop. */
 	stopOnEntry?: boolean;
-	/** enable logging the Debug Adapter Protocol */
-	trace?: boolean;
-	/** run without debugging */
-	noDebug?: boolean;
-	/** if specified, results in a simulated compile error in launch. */
-	compileError?: 'default' | 'show' | 'hide';
 }
 
 
-export class MockDebugSession extends LoggingDebugSession {
+export class MplabxDebugSession extends LoggingDebugSession {
 
 	// we don't support multiple threads, so we can use a hardcoded ID for the default thread
 	private static threadID = 1;
 
 	// a Mock runtime (or debugger)
-	private _runtime: MockRuntime;
+	private _runtime: MDBCommunications;
 
 	private _variableHandles = new Handles<'locals' | 'globals' | RuntimeVariable>();
 
@@ -72,64 +72,64 @@ export class MockDebugSession extends LoggingDebugSession {
 	 * We configure the default implementation of a debug adapter here.
 	 */
 	public constructor(fileAccessor: FileAccessor) {
-		super("mock-debug.txt");
+		super("mplab-debug.txt");
 
 		// this debugger uses zero-based lines and columns
-		this.setDebuggerLinesStartAt1(false);
-		this.setDebuggerColumnsStartAt1(false);
+		this.setDebuggerLinesStartAt1(true);
+		this.setDebuggerColumnsStartAt1(true);
 
-		this._runtime = new MockRuntime(fileAccessor);
+		this._runtime = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
 
 		// setup event handlers
-		this._runtime.on('stopOnEntry', () => {
-			this.sendEvent(new StoppedEvent('entry', MockDebugSession.threadID));
-		});
-		this._runtime.on('stopOnStep', () => {
-			this.sendEvent(new StoppedEvent('step', MockDebugSession.threadID));
-		});
-		this._runtime.on('stopOnBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('breakpoint', MockDebugSession.threadID));
-		});
-		this._runtime.on('stopOnDataBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('data breakpoint', MockDebugSession.threadID));
-		});
-		this._runtime.on('stopOnInstructionBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('instruction breakpoint', MockDebugSession.threadID));
-		});
-		this._runtime.on('stopOnException', (exception) => {
-			if (exception) {
-				this.sendEvent(new StoppedEvent(`exception(${exception})`, MockDebugSession.threadID));
-			} else {
-				this.sendEvent(new StoppedEvent('exception', MockDebugSession.threadID));
-			}
-		});
-		this._runtime.on('breakpointValidated', (bp: IRuntimeBreakpoint) => {
-			this.sendEvent(new BreakpointEvent('changed', { verified: bp.verified, id: bp.id } as DebugProtocol.Breakpoint));
-		});
-		this._runtime.on('output', (type, text, filePath, line, column) => {
+		// this._runtime.on('stopOnEntry', () => {
+		// 	this.sendEvent(new StoppedEvent('entry', MplabxDebugSession.threadID,));
+		// });
+		// this._runtime.on('stopOnStep', () => {
+		// 	this.sendEvent(new StoppedEvent('step', MplabxDebugSession.threadID,));
+		// });
+		// this._runtime.on('stopOnBreakpoint', () => {
+		// 	this.sendEvent(new StoppedEvent('breakpoint', MplabxDebugSession.threadID,));
+		// });
+		// this._runtime.on('stopOnDataBreakpoint', () => {
+		// 	this.sendEvent(new StoppedEvent('data breakpoint', MplabxDebugSession.threadID,));
+		// });
+		// this._runtime.on('stopOnInstructionBreakpoint', () => {
+		// 	this.sendEvent(new StoppedEvent('instruction breakpoint', MplabxDebugSession.threadID,));
+		// });
+		// this._runtime.on('stopOnException', (exception) => {
+		// 	if (exception) {
+		// 		this.sendEvent(new StoppedEvent(`exception(${exception})`, MplabxDebugSession.threadID,));
+		// 	} else {
+		// 		this.sendEvent(new StoppedEvent('exception', MplabxDebugSession.threadID,));
+		// 	}
+		// });
+		// this._runtime.on('breakpointValidated', (bp: IRuntimeBreakpoint) => {
+		// 	this.sendEvent(new BreakpointEvent('changed', { verified: bp.verified, id: bp.id } as DebugProtocol.Breakpoint));
+		// });
+		// this._runtime.on('output', (type, text, filePath, line, column) => {
 
-			let category: string;
-			switch(type) {
-				case 'prio': category = 'important'; break;
-				case 'out': category = 'stdout'; break;
-				case 'err': category = 'stderr'; break;
-				default: category = 'console'; break;
-			}
-			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}\n`, category);
+		// 	let category: string;
+		// 	switch(type) {
+		// 		case 'prio': category = 'important'; break;
+		// 		case 'out': category = 'stdout'; break;
+		// 		case 'err': category = 'stderr'; break;
+		// 		default: category = 'console'; break;
+		// 	}
+		// 	const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}\n`, category);
 
-			if (text === 'start' || text === 'startCollapsed' || text === 'end') {
-				e.body.group = text;
-				e.body.output = `group-${text}\n`;
-			}
+		// 	if (text === 'start' || text === 'startCollapsed' || text === 'end') {
+		// 		e.body.group = text;
+		// 		e.body.output = `group-${text}\n`;
+		// 	}
 
-			e.body.source = this.createSource(filePath);
-			e.body.line = this.convertDebuggerLineToClient(line);
-			e.body.column = this.convertDebuggerColumnToClient(column);
-			this.sendEvent(e);
-		});
-		this._runtime.on('end', () => {
-			this.sendEvent(new TerminatedEvent());
-		});
+		// 	e.body.source = this.createSource(filePath);
+		// 	e.body.line = this.convertDebuggerLineToClient(line);
+		// 	e.body.column = this.convertDebuggerColumnToClient(column);
+		// 	this.sendEvent(e);
+		// });
+		// this._runtime.on('end', () => {
+		// 	this.sendEvent(new TerminatedEvent());
+		// });
 	}
 
 	/**
@@ -174,24 +174,24 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body.supportsStepInTargetsRequest = true;
 
 		// the adapter defines two exceptions filters, one with support for conditions.
-		response.body.supportsExceptionFilterOptions = false;
-		response.body.exceptionBreakpointFilters = [
-			{
-				filter: 'namedException',
-				label: "Named Exception",
-				description: `Break on named exceptions. Enter the exception's name as the Condition.`,
-				default: false,
-				supportsCondition: true,
-				conditionDescription: `Enter the exception's name`
-			},
-			{
-				filter: 'otherExceptions',
-				label: "Other Exceptions",
-				description: 'This is a other exception',
-				default: true,
-				supportsCondition: false
-			}
-		];
+		// response.body.supportsExceptionFilterOptions = false;
+		// response.body.exceptionBreakpointFilters = [
+		// 	{
+		// 		filter: 'namedException',
+		// 		label: "Named Exception",
+		// 		description: `Break on named exceptions. Enter the exception's name as the Condition.`,
+		// 		default: false,
+		// 		supportsCondition: true,
+		// 		conditionDescription: `Enter the exception's name`
+		// 	},
+		// 	{
+		// 		filter: 'otherExceptions',
+		// 		label: "Other Exceptions",
+		// 		description: 'This is a other exception',
+		// 		default: true,
+		// 		supportsCondition: false
+		// 	}
+		// ];
 
 		// make VS Code send exceptionInfo request
 		response.body.supportsExceptionInfoRequest = false;
@@ -200,7 +200,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body.supportsSetVariable = true;
 
 		// make VS Code send setExpression request
-		response.body.supportsSetExpression = true;
+		response.body.supportsSetExpression = false;
 
 		// make VS Code send disassemble request
 		response.body.supportsDisassembleRequest = true;
@@ -232,27 +232,12 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: ILaunchRequestArguments) {
 
-		// make sure to 'Stop' the buffered logging if 'trace' is not set
-		logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
-
-		// wait 1 second until configuration has finished (and configurationDoneRequest has been called)
-		await this._configurationDone.wait(1000);
-
 		// start the program in the runtime
-		await this._runtime.start(args.program, !!args.stopOnEntry, !args.noDebug);
+		await this._runtime.start(args.program, args.configuration, !!args.stopOnEntry);
 
-		if (args.compileError) {
-			// simulate a compile/build error in "launch" request:
-			// the error should not result in a modal dialog since 'showUser' is set to false.
-			// A missing 'showUser' should result in a modal dialog.
-			this.sendErrorResponse(response, {
-				id: 1001,
-				format: `compile error: some fake error.`,
-				showUser: args.compileError === 'show' ? true : (args.compileError === 'hide' ? false : undefined)
-			});
-		} else {
-			this.sendResponse(response);
-		}
+        // TODO: The project may need to compiled for debugging here
+        
+        this.sendResponse(response);
 	}
 
 	protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
@@ -347,7 +332,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// runtime supports no threads so just return a default thread.
 		response.body = {
 			threads: [
-				new Thread(MockDebugSession.threadID, "thread 1")
+				new Thread(MplabxDebugSession.threadID, "thread 1")
 			]
 		};
 		this.sendResponse(response);
