@@ -87,9 +87,9 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		// this._runtime.on('stopOnStep', () => {
 		// 	this.sendEvent(new StoppedEvent('step', MplabxDebugSession.threadID,));
 		// });
-		// this._runtime.on('stopOnBreakpoint', () => {
-		// 	this.sendEvent(new StoppedEvent('breakpoint', MplabxDebugSession.threadID,));
-		// });
+		this._runtime.on('stopOnBreakpoint', () => {
+			this.sendEvent(new StoppedEvent('breakpoint', MplabxDebugSession.threadID,));
+		});
 		// this._runtime.on('stopOnDataBreakpoint', () => {
 		// 	this.sendEvent(new StoppedEvent('data breakpoint', MplabxDebugSession.threadID,));
 		// });
@@ -106,27 +106,21 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		// this._runtime.on('breakpointValidated', (bp: IRuntimeBreakpoint) => {
 		// 	this.sendEvent(new BreakpointEvent('changed', { verified: bp.verified, id: bp.id } as DebugProtocol.Breakpoint));
 		// });
-		// this._runtime.on('output', (type, text, filePath, line, column) => {
 
-		// 	let category: string;
-		// 	switch(type) {
-		// 		case 'prio': category = 'important'; break;
-		// 		case 'out': category = 'stdout'; break;
-		// 		case 'err': category = 'stderr'; break;
-		// 		default: category = 'console'; break;
-		// 	}
-		// 	const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}\n`, category);
+		this._runtime.on('output', (text, type) => {
 
-		// 	if (text === 'start' || text === 'startCollapsed' || text === 'end') {
-		// 		e.body.group = text;
-		// 		e.body.output = `group-${text}\n`;
-		// 	}
+			let category: string;
+			switch(type) {
+				case 'prio': category = 'important'; break;
+				case 'out': category = 'stdout'; break;
+				case 'err': category = 'stderr'; break;
+				default: category = 'console'; break;
+			}
+			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}`, category);
 
-		// 	e.body.source = this.createSource(filePath);
-		// 	e.body.line = this.convertDebuggerLineToClient(line);
-		// 	e.body.column = this.convertDebuggerColumnToClient(column);
-		// 	this.sendEvent(e);
-		// });
+			this.sendEvent(e);
+		});
+
 		// this._runtime.on('end', () => {
 		// 	this.sendEvent(new TerminatedEvent());
 		// });
@@ -210,6 +204,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		}).catch(reason => {
 			response.success = false;
 			response.message = reason.message;
+			response.command = reason.message;
 			this.sendResponse(response);
 		});
 	}

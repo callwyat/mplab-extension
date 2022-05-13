@@ -9,6 +9,8 @@ import * as vscode from 'vscode';
 import { MplabxConfigFile } from '../common/configFileHelper';
 import path = require('path');
 import fs = require('fs');
+import { EventEmitter } from 'stream';
+import { debug } from 'console';
 
 export interface IConnectResult {
 	success: boolean,
@@ -57,40 +59,57 @@ export interface IGetLocalsResponse {
 
 }
 
+export interface ILogWriter {
+	write(input: string): void;
+}
+
+export enum LogLevel {
+	wrote,
+	read,
+	info,
+	error,
+}
+
 /** A helper class for finding all the MPLABX things */
-export class MDBCommunications {
+export class MDBCommunications extends EventEmitter {
 
 	private disposed: boolean = false;
 	private _mdbProcess: ChildProcess;
-	private _vscodeMdbOutput: vscode.OutputChannel;
+	private _mdbLogger: ILogWriter | undefined;
 	private _mdbMutex: Mutex = new Mutex();
 
 	/**
 	 * A helper class for all things MPLABX
 	 * @param mdbPath Specifies the path to the mdb debugger to use
 	 */
-	constructor(mdbPath: string) {
-		{
-			this._vscodeMdbOutput = vscode.window.createOutputChannel('MPLABX Debugger');
+	constructor(mdbPath: string, logger?: ILogWriter) {
+		super();
 
-			this._mdbProcess = spawn(mdbPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
-			this._vscodeMdbOutput?.appendLine(`--- Started Microchip Debugger ---`);
+		this._mdbLogger = logger;
 
-			this._mdbProcess.stderr?.on('data', (error) => {
-				this._vscodeMdbOutput?.appendLine(`[Error] ${error}`);
-			});
+		this._mdbProcess = spawn(mdbPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+		this.logLine(`--- Started Microchip Debugger ---`, LogLevel.info);
 
-			this._mdbProcess.stdout?.on('data', (data: String) => {
-				this._vscodeMdbOutput?.append(`${data}`);
-			});
+		this._mdbProcess.stderr?.on('data', (error) => {
+			debug(`MDB ERROR -> ${error}`);
+		});
 
-			this._mdbProcess.on('close', (code) => {
-				this._vscodeMdbOutput?.appendLine(`--- Microchip Debugger exited with code ${code} ---`);
-			});
+		this._mdbProcess.stdout?.on('data', (data: String) => {
+			let d: string = `${data}`;
+			this.log(d, LogLevel.read);
 
-			// Wait for the Microchip Debugger to start up.
-			this._mdbMutex.runExclusive(() => this.readResult());
-		}
+			if (d.match(/Stop at/g)) {
+				this.emit('stopOnBreakpoint');
+			}
+		});
+
+		this._mdbProcess.on('close', (code) => {
+			this.logLine(`--- Microchip Debugger exited with code ${code} ---`,
+				code === 0 ? LogLevel.info : LogLevel.error);
+		});
+
+		// Wait for the Microchip Debugger to start up.
+		this._mdbMutex.runExclusive(() => this.readResult());
 	}
 
 	/** Gets the Microchip Debugger Process */
@@ -103,29 +122,34 @@ export class MDBCommunications {
 		return this._mdbProcess;
 	}
 
+	private log(input: string, logLevel: LogLevel) {
+		this._mdbLogger?.write(`${logLevel === LogLevel.error ? '[Error] ' : ''}${input}`);
+		this.emit('output', input, logLevel);
+	}
+
+	private logLine(input: string, logLevel: LogLevel) {
+		this.log(`${input}\r`, logLevel);
+	}
+
+	private _write(input: string) {
+		this.mdbProcess.stdin?.write(input + '\r\n');
+		this.logLine(input, LogLevel.wrote);
+	}
+
 	/** Writes the given command to the Microchip Debugger
 	 * @param input The command to send
 	 */
 	public write(input: string) {
-		if (this.mdbProcess.stdin) {
-			this.mdbProcess.stdin.write(input + '\r\n');
-			this._vscodeMdbOutput?.appendLine(input);
-		} else {
-			throw new Error('Microchip Debugger missing a standard input');
-		}
+		this._mdbMutex.runExclusive(() => {
+			this._write(input);
+		});
 	}
 
 	/** Reads a single line from the Microchip Debugger */
 	public async readLine(): Promise<string> {
-		if (this.mdbProcess.stdout) {
-
-			return new Promise((resolve, reject) => {
-				this.mdbProcess.stdout?.once('data', resolve);
-			});
-		}
-		else {
-			throw new Error('Microchip Debugger is missing a standard output');
-		}
+		return new Promise((resolve, reject) => {
+			this.mdbProcess.stdout?.once('data', resolve);
+		});
 	}
 
 	/** Reads the whole response to a command from the Microchip Debugger */
@@ -150,9 +174,10 @@ export class MDBCommunications {
 				this.mdbProcess.stdout?.read();
 			}
 
-			this.write(input);
+			let result: Promise<string> = this.readResult();
+			this._write(input);
 
-			return this.readResult();
+			return result;
 		});
 	}
 
@@ -214,11 +239,11 @@ export class MDBCommunications {
 		let message: string = await this.query(`Hwtool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`);
 
 		if (!message.match(/Target device (.+) found\./)) {
-			throw new Error(`Failed to connect to target device ${message}`);
+			throw new Error(`Failed to connect to target device ${message.replace(/^\>+|\>+$/g, '').trim()}`);
 		}
 	}
 
-	public async startDebugger(program: string, configuration='default', stopOnEntry: boolean) {
+	public async startDebugger(program: string, configuration = 'default', stopOnEntry = false) {
 
 		let project = await MplabxConfigFile.read(program);
 
@@ -226,7 +251,7 @@ export class MDBCommunications {
 
 		let conf = confs.find(c => c.conf[0].$.name === configuration);
 
-		if (conf){
+		if (conf) {
 			conf = conf.conf[0];
 		} else {
 			throw Error(`Failure to find a "${configuration}" configuration in ${project}`);
@@ -247,7 +272,13 @@ export class MDBCommunications {
 					let elfFile = elfFiles[0].name;
 
 					const programResult = await this.query(`Program "${path.join(elfFolder, elfFile)}"`);
-					if (!programResult.match(/Program succeeded\./)) {
+					if (programResult.match(/Program succeeded\./)) {
+						if (stopOnEntry) {
+							this.emit('stopOnBreakpoint');
+						} else {
+							this.run();
+						}
+					} else {
 						throw new Error('Failure to write program to device');
 					}
 				} else {
@@ -260,19 +291,19 @@ export class MDBCommunications {
 	}
 
 	public clearBreakpoints() {
-		this.write('delete');
+		this.query('delete');
 	}
 
 	public clearBreakpoint(id: number) {
-		this.write(`delete ${id}`);
+		this.query(`delete ${id}`);
 	}
 
 	public async setBreakpoint(file: string, line: bigint): Promise<ISetBreakpointResponse> {
 
-		return this.query(`break ${file}:${line}`).then(response => {
-			let r = response.match(/Breakpoint (\\d+) at file (.+), line (\\d+)\\./s);
+		return this.query(`break ${path.basename(file)}:${line}`).then(response => {
+			let r = response.match(/Breakpoint (\d+) at file (.+), line (\d+)\./s);
 
-			return r?.groups ? { id: parseInt(r.groups[0]), line: parseInt(r.groups[2]), verified: true } :
+			return r ? { id: parseInt(r[1]), line: parseInt(r[3]), verified: true } :
 				{ id: -1, line: -1, verified: false };
 		});
 	}
@@ -283,14 +314,13 @@ export class MDBCommunications {
 			let re = [...response.matchAll(/(\d+)\s*(y|n)\s*(0x[\dA-F]+)\s*at (.*):(\d+)/g)];
 
 			return re.forEach((m, i) => {
-				if (m.groups) {
-					let g = m.groups;
+				if (m) {
 					return {
-						id: parseInt(g[0]),
-						enabled: g[1] === 'y',
-						address: parseInt(g[2]),
-						file: g[3],
-						line: parseInt(g[4])
+						id: parseInt(m[1]),
+						enabled: m[2] === 'y',
+						address: parseInt(m[3]),
+						file: m[4],
+						line: parseInt(m[5])
 					};
 				}
 			});
@@ -302,16 +332,13 @@ export class MDBCommunications {
 		return this.query('backtrace').then(response => {
 			let re = [...response.matchAll(/#(\d+)\s+(\w+)\s+\(.*\)\s+at\s(.+):(\d+)/g)];
 
-			return re.forEach((m, i) => {
-				if (m.groups) {
-					let g = m.groups;
-					return {
-						index: parseInt(g[0]),
-						name: g[1],
-						file: g[2],
-						line: parseInt(g[3])
-					};
-				}
+			return re.map((m, i) => {
+				return {
+					index: parseInt(m[1]),
+					name: m[2],
+					file: m[3],
+					line: parseInt(m[4])
+				};
 			});
 		});
 	}
@@ -354,7 +381,7 @@ export class MDBCommunications {
 			if (re) {
 				return {
 					verified: true,
-					id: re.groups ? parseInt(re.groups[0]) : -1,
+					id: re ? parseInt(re[1]) : -1,
 					message: response,
 				};
 			} else {
