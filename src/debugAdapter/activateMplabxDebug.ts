@@ -12,16 +12,16 @@ import { WorkspaceFolder, DebugConfiguration, ProviderResult, CancellationToken 
 import { MplabxDebugSession } from './mplabxDebug';
 import { FileAccessor } from '../common/FileAccessor';
 
-export function activateMockDebug(context: vscode.ExtensionContext, factory?: vscode.DebugAdapterDescriptorFactory) {
+export function activateMplabxDebug(context: vscode.ExtensionContext, factory?: vscode.DebugAdapterDescriptorFactory) {
 
 	// register a configuration provider for 'mplabx' debug type
 	const provider = new MPLABXConfigurationProvider();
-	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mplab', provider));
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('mplabx', provider));
 
 	if (!factory) {
 		factory = new InlineDebugAdapterFactory();
 	}
-	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('mplab', factory));
+	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('mplabx', factory));
 	if ('dispose' in factory) {
 		context.subscriptions.push(factory);
 	}

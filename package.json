@@ -45,6 +45,7 @@
     "@types/mocha": "^9.1.0",
     "@types/node": "^14.18.12",
     "@types/vscode": "^1.64.0",
+    "@types/xml2js": "^0.4.11",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "@vscode/debugadapter": "^1.55.0-pre.1",
@@ -53,7 +54,7 @@
     "await-notify": "1.0.1",
     "base64-js": "^1.5.1",
     "child_process": "^1.0.2",
-    "esbuild": "^0.14.21",
+    "esbuild": "^0.14.38",
     "eslint": "^8.9.0",
     "events": "^3.3.0",
     "glob": "^7.2.0",
@@ -212,7 +213,9 @@
       {
         "name": "mpasm",
         "owner": "mplab",
-        "fileLocation": ["absolute"],
+        "fileLocation": [
+          "absolute"
+        ],
         "pattern": {
           "regexp": "(Error|Warning)(\\[\\d+\\])\\s+(.*)\\s(\\d+)\\s:\\s(.*)",
           "severity": 1,
@@ -225,7 +228,9 @@
       {
         "name": "mpasm-msg",
         "owner": "mplab",
-        "fileLocation": ["absolute"],
+        "fileLocation": [
+          "absolute"
+        ],
         "severity": "info",
         "pattern": {
           "regexp": "(Message)(\\[\\d+\\])\\s+(.*)\\s(\\d+)\\s:\\s(.*)",
@@ -243,5 +248,8 @@
         "path": "./snippets/jsonc.json"
       }
     ]
+  },
+  "dependencies": {
+    "xml2js": "^0.4.23"
   }
 }

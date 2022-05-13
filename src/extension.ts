@@ -17,13 +17,11 @@
 
 import * as Net from 'net';
 import * as vscode from 'vscode';
-import { randomBytes } from 'crypto';
-import { tmpdir } from 'os';
 import { join } from 'path';
 import { platform } from 'process';
 import { ProviderResult } from 'vscode';
-import { MockDebugSession } from './archive/mockDebug';
-import { activateMockDebug, workspaceFileAccessor } from './archive/activateMockDebug';
+import { MplabxDebugSession } from './debugAdapter/mplabxDebug';
+import { activateMplabxDebug, workspaceFileAccessor } from './debugAdapter/activateMplabxDebug';
 import { MPLABXAssistant, MpMakeTaskDefinition } from './mplabxAssistant';
 import { MPLABXPaths } from './common/mplabPaths';
 
@@ -41,17 +39,17 @@ export function activate(context: vscode.ExtensionContext) {
 	switch (runMode) {
 		case 'server':
 			// run the debug adapter as a server inside the extension and communicate via a socket
-			activateMockDebug(context, new MockDebugAdapterServerDescriptorFactory());
+			activateMplabxDebug(context, new MplabxDebugAdapterServerDescriptorFactory());
 			break;
 
 		case 'external': default:
 			// run the debug adapter as a separate process
-			activateMockDebug(context, new DebugAdapterExecutableFactory());
+			activateMplabxDebug(context, new DebugAdapterExecutableFactory());
 			break;
 
 		case 'inline':
 			// run the debug adapter inside the extension and directly talk to it
-			activateMockDebug(context);
+			activateMplabxDebug(context);
 			break;
 	}
 	
@@ -166,7 +164,7 @@ class DebugAdapterExecutableFactory implements vscode.DebugAdapterDescriptorFact
 	}
 }
 
-class MockDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDescriptorFactory {
+class MplabxDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDescriptorFactory {
 
 	private server?: Net.Server;
 
@@ -175,7 +173,7 @@ class MockDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDesc
 		if (!this.server) {
 			// start listening on a random port
 			this.server = Net.createServer(socket => {
-				const session = new MockDebugSession(workspaceFileAccessor);
+				const session = new MplabxDebugSession(workspaceFileAccessor);
 				session.setRunAsServer(true);
 				session.start(socket as NodeJS.ReadableStream, socket);
 			}).listen(0);

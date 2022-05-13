@@ -2,10 +2,10 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { MockDebugSession } from './archive/mockDebug';
+import { MplabxDebugSession } from './debugAdapter/mplabxDebug';
 import { promises as fs } from 'fs';
 import * as Net from 'net';
-import { FileAccessor } from './archive/mockRuntime';
+import { FileAccessor } from './common/FileAccessor';
 
 /*
  * debugAdapter.js is the entrypoint of the debug adapter when it runs as a separate process.
@@ -53,14 +53,14 @@ if (port > 0) {
 		socket.on('end', () => {
 			console.error('>> client connection closed\n');
 		});
-		const session = new MockDebugSession(fsAccessor);
+		const session = new MplabxDebugSession(fsAccessor);
 		session.setRunAsServer(true);
 		session.start(socket, socket);
 	}).listen(port);
 } else {
 
 	// start a single session that communicates via stdin/stdout
-	const session = new MockDebugSession(fsAccessor);
+	const session = new MplabxDebugSession(fsAccessor);
 	process.on('SIGTERM', () => {
 		session.shutdown();
 	});
