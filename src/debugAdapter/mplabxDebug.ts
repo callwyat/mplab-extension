@@ -15,14 +15,14 @@ import {
 	LoggingDebugSession,
 	InitializedEvent, TerminatedEvent, StoppedEvent, BreakpointEvent, OutputEvent,
 	ProgressStartEvent, ProgressUpdateEvent, ProgressEndEvent, InvalidatedEvent,
-	Thread, StackFrame, Scope, Source, Handles, Breakpoint, MemoryEvent
+	Thread, StackFrame, Scope, Source, Handles, Breakpoint, MemoryEvent, Variable
 } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { basename } from 'path-browserify';
 import { Subject } from 'await-notify';
 import * as base64 from 'base64-js';
 import { FileAccessor } from '../common/FileAccessor';
-import { MDBCommunications } from './mdbCommunications';
+import { IVariable, MDBCommunications } from './mdbCommunications';
 import { MPLABXPaths } from '../common/mplabPaths';
 
 /**
@@ -51,7 +51,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	// a Mock runtime (or debugger)
 	private _runtime: MDBCommunications;
 
-	// private _variableHandles = new Handles<'locals' | 'globals' | RuntimeVariable>();
+	private _variableHandles = new Handles<'locals' | 'parameters'>();
 
 	private _configurationDone = new Subject();
 
@@ -81,9 +81,9 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		this._runtime = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
 
 		// setup event handlers
-		// this._runtime.on('stopOnEntry', () => {
-		// 	this.sendEvent(new StoppedEvent('entry', MplabxDebugSession.threadID,));
-		// });
+		this._runtime.on('stopOnEntry', () => {
+			this.sendEvent(new StoppedEvent('entry', MplabxDebugSession.threadID,));
+		});
 		// this._runtime.on('stopOnStep', () => {
 		// 	this.sendEvent(new StoppedEvent('step', MplabxDebugSession.threadID,));
 		// });
@@ -146,7 +146,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		response.body.supportsConfigurationDoneRequest = true;
 
 		// make VS Code use 'evaluate' when hovering over source
-		// response.body.supportsEvaluateForHovers = true;
+		response.body.supportsEvaluateForHovers = true;
 
 		// make VS Code support data breakpoints
 		//response.body.supportsDataBreakpoints = true;
@@ -339,16 +339,16 @@ export class MplabxDebugSession extends LoggingDebugSession {
 
 	}
 
-	// protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
+	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
 
-	// 	response.body = {
-	// 		scopes: [
-	// 			new Scope("Locals", this._variableHandles.create('locals'), false),
-	// 			new Scope("Globals", this._variableHandles.create('globals'), true)
-	// 		]
-	// 	};
-	// 	this.sendResponse(response);
-	// }
+		response.body = {
+			scopes: [
+				new Scope("Locals", this._variableHandles.create('locals'), false),
+				new Scope("Parameters", this._variableHandles.create('parameters'), false)
+			]
+		};
+		this.sendResponse(response);
+	}
 
 	// protected async writeMemoryRequest(response: DebugProtocol.WriteMemoryResponse, { data, memoryReference, offset = 0 }: DebugProtocol.WriteMemoryArguments) {
 	// 	const variable = this._variableHandles.get(Number(memoryReference));
@@ -388,30 +388,23 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	// 	this.sendResponse(response);
 	// }
 
-	// protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
+	protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
 
-	// 	let vs: RuntimeVariable[] = [];
+		let vs: IVariable[] = []; 
+		
+		const v = this._variableHandles.get(args.variablesReference);
+		if (v === 'locals') {
+			vs = await this._runtime.getLocalVariables();
+		} else if (v === 'parameters') {
+			vs = await this._runtime.getParameters();
+		} 
 
-	// 	const v = this._variableHandles.get(args.variablesReference);
-	// 	if (v === 'locals') {
-	// 		vs = this._runtime.getLocalVariables();
-	// 	} else if (v === 'globals') {
-	// 		if (request) {
-	// 			this._cancellationTokens.set(request.seq, false);
-	// 			vs = await this._runtime.getGlobalVariables(() => !!this._cancellationTokens.get(request.seq));
-	// 			this._cancellationTokens.delete(request.seq);
-	// 		} else {
-	// 			vs = await this._runtime.getGlobalVariables();
-	// 		}
-	// 	} else if (v && Array.isArray(v.value)) {
-	// 		vs = v.value;
-	// 	}
+		response.body = {
+			variables: [...vs.map(v => new Variable(v.name, v.value.toString()))]
+		};
 
-	// 	response.body = {
-	// 		variables: vs.map(v => this.convertFromRuntime(v))
-	// 	};
-	// 	this.sendResponse(response);
-	// }
+		this.sendResponse(response);
+	}
 
 	// protected setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments): void {
 	// 	const container = this._variableHandles.get(args.variablesReference);
@@ -438,18 +431,13 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments): void {
-		// TODO: Makes sure this can be removed
+	protected pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): void {
+		this._runtime.halt();
 		this.sendResponse(response);
 	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
 		this._runtime.next();
-		this.sendResponse(response);
-	}
-
-	protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
-		// TODO: Makes sure this can be removed
 		this.sendResponse(response);
 	}
 
@@ -469,76 +457,86 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	}
 
 	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
-		// TODO: This doesn't seam to be supported by MDB
+		// Step out isn't supported by MDB, but is needed by the debug adapter
+		// Next closest thing is next command.
+		this._runtime.next();
 		this.sendResponse(response);
 	}
 
-	// protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): Promise<void> {
+	protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): Promise<void> {
 
-	// 	let reply: string | undefined;
-	// 	let rv: RuntimeVariable | undefined;
+		let reply: string | undefined;
+		let rv: Variable | undefined;
 
-	// 	switch (args.context) {
-	// 		case 'repl':
-	// 			// handle some REPL commands:
-	// 			// 'evaluate' supports to create and delete breakpoints from the 'repl':
-	// 			const matches = /new +([0-9]+)/.exec(args.expression);
-	// 			if (matches && matches.length === 2) {
-	// 				const mbp = await this._runtime.setBreakpoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-	// 				const bp = new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFile)) as DebugProtocol.Breakpoint;
-	// 				bp.id = mbp.id;
-	// 				this.sendEvent(new BreakpointEvent('new', bp));
-	// 				reply = `breakpoint created`;
-	// 			} else {
-	// 				const matches = /del +([0-9]+)/.exec(args.expression);
-	// 				if (matches && matches.length === 2) {
-	// 					const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-	// 					if (mbp) {
-	// 						const bp = new Breakpoint(false) as DebugProtocol.Breakpoint;
-	// 						bp.id = mbp.id;
-	// 						this.sendEvent(new BreakpointEvent('removed', bp));
-	// 						reply = `breakpoint deleted`;
-	// 					}
-	// 				} else {
-	// 					const matches = /progress/.exec(args.expression);
-	// 					if (matches && matches.length === 1) {
-	// 						if (this._reportProgress) {
-	// 							reply = `progress started`;
-	// 							this.progressSequence();
-	// 						} else {
-	// 							reply = `frontend doesn't support progress (capability 'supportsProgressReporting' not set)`;
-	// 						}
-	// 					}
-	// 				}
-	// 			}
-	// 		// fall through
+		switch (args.context) {
+			// case 'repl':
+			// 	// handle some REPL commands:
+			// 	// 'evaluate' supports to create and delete breakpoints from the 'repl':
+			// 	const matches = /new +([0-9]+)/.exec(args.expression);
+			// 	if (matches && matches.length === 2) {
+			// 		const mbp = await this._runtime.setBreakpoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+			// 		const bp = new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFile)) as DebugProtocol.Breakpoint;
+			// 		bp.id = mbp.id;
+			// 		this.sendEvent(new BreakpointEvent('new', bp));
+			// 		reply = `breakpoint created`;
+			// 	} else {
+			// 		const matches = /del +([0-9]+)/.exec(args.expression);
+			// 		if (matches && matches.length === 2) {
+			// 			const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+			// 			if (mbp) {
+			// 				const bp = new Breakpoint(false) as DebugProtocol.Breakpoint;
+			// 				bp.id = mbp.id;
+			// 				this.sendEvent(new BreakpointEvent('removed', bp));
+			// 				reply = `breakpoint deleted`;
+			// 			}
+			// 		} else {
+			// 			const matches = /progress/.exec(args.expression);
+			// 			if (matches && matches.length === 1) {
+			// 				if (this._reportProgress) {
+			// 					reply = `progress started`;
+			// 					this.progressSequence();
+			// 				} else {
+			// 					reply = `frontend doesn't support progress (capability 'supportsProgressReporting' not set)`;
+			// 				}
+			// 			}
+			// 		}
+			// 	}
+			// fall through
 
-	// 		default:
-	// 			if (args.expression.startsWith('$')) {
-	// 				rv = this._runtime.getLocalVariable(args.expression.substr(1));
-	// 			} else {
-	// 				rv = new RuntimeVariable('eval', this.convertToRuntime(args.expression));
-	// 			}
-	// 			break;
-	// 	}
+			case 'hover':
+			case 'watch':
+				let watch = await this._runtime.printVariable(args.expression);
 
-	// 	if (rv) {
-	// 		const v = this.convertFromRuntime(rv);
-	// 		response.body = {
-	// 			result: v.value,
-	// 			type: v.type,
-	// 			variablesReference: v.variablesReference,
-	// 			presentationHint: v.presentationHint
-	// 		};
-	// 	} else {
-	// 		response.body = {
-	// 			result: reply ? reply : `evaluate(context: '${args.context}', '${args.expression}')`,
-	// 			variablesReference: 0
-	// 		};
-	// 	}
+				if (watch){
+					rv = new Variable(watch.name, watch.value.toString());
+				} else {
+					reply = 'Out of Scope';
+				}
+				break;
 
-	// 	this.sendResponse(response);
-	// }
+			// default:
+			// 	if (args.expression.startsWith('$')) {
+			// 		rv = this._runtime.getLocalVariable(args.expression.substr(1));
+			// 	} else {
+			// 		rv = new RuntimeVariable('eval', this.convertToRuntime(args.expression));
+			// 	}
+			// 	break;
+		}
+
+		if (rv) {
+			response.body = {
+				result: rv.value,
+				variablesReference: rv.variablesReference
+			};
+		} else {
+			response.body = {
+				result: reply ? reply : 'Unknown Expression',
+				variablesReference: 0
+			};
+		}
+
+		this.sendResponse(response);
+	}
 
 	// protected setExpressionRequest(response: DebugProtocol.SetExpressionResponse, args: DebugProtocol.SetExpressionArguments): void {
 
@@ -751,6 +749,11 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	// 		super.customRequest(command, response, args);
 	// 	}
 	// }
+
+	protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
+		this._runtime.quit();
+		this.sendResponse(response);
+	}
 
 	//---- helpers
 

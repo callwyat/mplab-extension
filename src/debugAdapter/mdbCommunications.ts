@@ -5,7 +5,6 @@
 'use strict';
 import { ChildProcess, spawn } from 'child_process';
 import { Mutex } from 'async-mutex';
-import * as vscode from 'vscode';
 import { MplabxConfigFile } from '../common/configFileHelper';
 import path = require('path');
 import fs = require('fs');
@@ -54,9 +53,11 @@ export interface ISetWatchResponse {
 	message: string;
 }
 
-export interface IGetLocalsResponse {
+export interface IVariable {
 	name: string;
-
+	value: number;
+	indexChildren?: IVariable[];
+	namedChildren?: IVariable[];
 }
 
 export interface ILogWriter {
@@ -184,7 +185,7 @@ export class MDBCommunications extends EventEmitter {
 	/** Gets a list of all the attached hardware tools that can program */
 	public async getAttachedProgramers(): Promise<string[]> {
 
-		return this.query("hwtool").then((value) => {
+		return this.query("HwTool").then((value) => {
 
 			let lines: string[] = value.split('\n');
 
@@ -236,7 +237,11 @@ export class MDBCommunications extends EventEmitter {
 		}
 
 		// Connect to the tools
-		let message: string = await this.query(`Hwtool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`);
+		let message: string = await this.query(`HwTool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`);
+
+		if (message.length < 3) {
+			message = await this.readResult();
+		}
 
 		if (!message.match(/Target device (.+) found\./)) {
 			throw new Error(`Failed to connect to target device ${message.replace(/^\>+|\>+$/g, '').trim()}`);
@@ -274,7 +279,7 @@ export class MDBCommunications extends EventEmitter {
 					const programResult = await this.query(`Program "${path.join(elfFolder, elfFile)}"`);
 					if (programResult.match(/Program succeeded\./)) {
 						if (stopOnEntry) {
-							this.emit('stopOnBreakpoint');
+							this.emit('stopOnEntry');
 						} else {
 							this.run();
 						}
@@ -327,12 +332,33 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
+	private lastLocals: Array<IVariable> | undefined;
+	private lastParameters: Array<IVariable> | undefined;
 	public async getStack(): Promise<Array<IGetStackResponse> | void> {
 
-		return this.query('backtrace').then(response => {
-			let re = [...response.matchAll(/#(\d+)\s+(\w+)\s+\(.*\)\s+at\s(.+):(\d+)/g)];
+		return this.query('backtrace full').then(response => {
 
-			return re.map((m, i) => {
+			let localsMatches = [...response.matchAll(/\s+(\w+) = 0x(\d+)/g)];
+
+			this.lastLocals = localsMatches.map((m, i) => {
+				return {
+					name: m[1],
+					value: parseInt(m[2], 16),
+				};
+			});
+
+			let parametersMatch = [...response.matchAll(/\s+(\w+)=0x(\d+)/g)];
+
+			this.lastParameters = parametersMatch.map((m, i) => {
+				return {
+					name: m[1],
+					value: parseInt(m[2], 16),
+				};
+			});
+
+			let stackMatches = [...response.matchAll(/#(\d+)\s+(\w+)\s+\(.*\)\s+at\s(.+):(\d+)/g)];
+
+			return stackMatches.map((m, i) => {
 				return {
 					index: parseInt(m[1]),
 					name: m[2],
@@ -341,6 +367,16 @@ export class MDBCommunications extends EventEmitter {
 				};
 			});
 		});
+	}
+
+	public async getLocalVariables(): Promise<Array<IVariable>> {
+
+		return this.lastLocals ? this.lastLocals : [];
+	}
+
+	public async getParameters(): Promise<Array<IVariable>> {
+
+		return this.lastParameters ? this.lastParameters : [];
 	}
 
 	public run(): void {
@@ -361,6 +397,10 @@ export class MDBCommunications extends EventEmitter {
 
 	public halt(): void {
 		this.write('Halt');
+	}
+
+	public quit(): void {
+		this.dispose();
 	}
 
 	public async watch(address: string, breakOnType: BreakOnType, value?: number, passCount?: number): Promise<ISetWatchResponse> {
@@ -394,11 +434,34 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
+	public async printVariable(name: string): Promise<IVariable | undefined> {
+
+		const hexMatch = name.match(/^0x([\dA-Fa-f]+)$/);
+		if (hexMatch) {
+			name = parseInt(hexMatch[1]).toString();
+		}
+
+		return this.query(`Print ${name}`).then(response => {
+			const re = response.match(/(\w+)=\n?(\d+)/);
+
+			if (re) {
+				return {
+					name: re[1],
+					value: parseFloat(re[2]),
+				};
+			} else {
+				return undefined;
+			}
+		});
+	}
+
+	private
+
 	/** Disposes the assistant */
 	public dispose() {
 		this.disposed = true;
 		if (this._mdbProcess) {
-			this.write('quit');
+			this.write('Quit');
 		}
 	}
 }
