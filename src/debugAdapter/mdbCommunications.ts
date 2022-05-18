@@ -410,6 +410,21 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
+
+	public get hasLocalVariables(): boolean {
+		if (this.lastLocals && this.lastLocals.length) {
+			return this.lastLocals.length > 0;
+		}
+		return false;
+	}
+
+	public get hasParameters(): boolean {
+		if (this.lastParameters && this.lastParameters.length) {
+			return this.lastParameters.length > 0;
+		}
+		return false;
+	}
+
 	public async getLocalVariables(): Promise<Array<IVariable>> {
 
 		return this.lastLocals ? this.lastLocals : [];

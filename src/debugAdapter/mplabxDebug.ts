@@ -341,11 +341,18 @@ export class MplabxDebugSession extends LoggingDebugSession {
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
 
+		let scopes : DebugProtocol.Scope[] = [];
+
+		if (this._runtime.hasLocalVariables){
+			scopes = scopes.concat(new Scope("Locals", this._variableHandles.create('locals'), false));
+		}
+
+		if (this._runtime.hasParameters){
+			scopes = scopes.concat(new Scope("Parameters", this._variableHandles.create('parameters'), false));
+		}
+
 		response.body = {
-			scopes: [
-				new Scope("Locals", this._variableHandles.create('locals'), false),
-				new Scope("Parameters", this._variableHandles.create('parameters'), false)
-			]
+			scopes: scopes
 		};
 		this.sendResponse(response);
 	}
