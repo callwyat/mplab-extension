@@ -11,6 +11,12 @@ import fs = require('fs');
 import { EventEmitter } from 'stream';
 import { debug } from 'console';
 
+enum ConnectionLevel {
+	none,
+	deviceSet,
+	connected,
+	programed,
+}
 export interface IConnectResult {
 	success: boolean,
 	message: string,
@@ -79,6 +85,23 @@ export class MDBCommunications extends EventEmitter {
 	private _mdbLogger: ILogWriter | undefined;
 	private _mdbMutex: Mutex = new Mutex();
 
+	private _connectionLevel: ConnectionLevel = ConnectionLevel.none;
+	private get connectionLevel(): ConnectionLevel {
+		return this._connectionLevel;
+	}
+
+	private set connectionLevel(value: ConnectionLevel) {
+		this._connectionLevel = value;
+		switch (value) {
+			case ConnectionLevel.none:
+				break;
+			default:
+				this.emit(value.toString());
+				break;
+		}
+	}
+
+
 	/**
 	 * A helper class for all things MPLABX
 	 * @param mdbPath Specifies the path to the mdb debugger to use
@@ -87,7 +110,6 @@ export class MDBCommunications extends EventEmitter {
 		super();
 
 		this._mdbLogger = logger;
-
 		this._mdbProcess = spawn(mdbPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 		this.logLine(`--- Started Microchip Debugger ---`, LogLevel.info);
 
@@ -132,7 +154,7 @@ export class MDBCommunications extends EventEmitter {
 		this.log(`${input}\r`, logLevel);
 	}
 
-	private _write(input: string) {
+	private _write(input: string, level: ConnectionLevel) {
 		this.mdbProcess.stdin?.write(input + '\r\n');
 		this.logLine(input, LogLevel.wrote);
 	}
@@ -140,21 +162,25 @@ export class MDBCommunications extends EventEmitter {
 	/** Writes the given command to the Microchip Debugger
 	 * @param input The command to send
 	 */
-	public write(input: string) {
-		this._mdbMutex.runExclusive(() => {
-			this._write(input);
-		});
+	private write(input: string, level: ConnectionLevel) {
+		if (this.connectionLevel >= level) {
+			this._mdbMutex.runExclusive(() => {
+				this._write(input, level);
+			});
+		} else {
+			this.once(level.toString(), () => this.write(input, level));
+		}
 	}
 
 	/** Reads a single line from the Microchip Debugger */
-	public async readLine(): Promise<string> {
+	private async readLine(): Promise<string> {
 		return new Promise((resolve, reject) => {
 			this.mdbProcess.stdout?.once('data', resolve);
 		});
 	}
 
 	/** Reads the whole response to a command from the Microchip Debugger */
-	public async readResult(): Promise<string> {
+	private async readResult(): Promise<string> {
 
 		let result: string = '';
 		do {
@@ -167,25 +193,33 @@ export class MDBCommunications extends EventEmitter {
 	/** Sends a command to the Microchip Debugger and returns the whole response
 	 * @param input The command to send to the debugger
 	 */
-	public async query(input: string): Promise<string> {
+	public async query(input: string, level: ConnectionLevel): Promise<string> {
 
-		return this._mdbMutex.runExclusive(() => {
-			// Read off any data that may be sitting in the buffer.
-			if (this.mdbProcess.stdout?.readableLength ?? 0 > 0) {
-				this.mdbProcess.stdout?.read();
-			}
+		if (this.connectionLevel >= level) {
+			return this._mdbMutex.runExclusive(() => {
+				// Read off any data that may be sitting in the buffer.
+				if (this.mdbProcess.stdout?.readableLength ?? 0 > 0) {
+					this.mdbProcess.stdout?.read();
+				}
 
-			let result: Promise<string> = this.readResult();
-			this._write(input);
+				let result: Promise<string> = this.readResult();
+				this._write(input, level);
 
-			return result;
-		});
+				return result;
+			});
+		} else {
+			return new Promise<string>((resolve) => {
+				this.once(level.toString(), () => {
+					this.query(input, level).then(v => resolve);
+				});
+			});
+		}
 	}
 
 	/** Gets a list of all the attached hardware tools that can program */
 	public async getAttachedProgramers(): Promise<string[]> {
 
-		return this.query("HwTool").then((value) => {
+		return this.query("HwTool", ConnectionLevel.none).then((value) => {
 
 			let lines: string[] = value.split('\n');
 
@@ -211,11 +245,13 @@ export class MDBCommunications extends EventEmitter {
 		"pk4hybrid": "PICKit4"
 	};
 
-	async connect(conf, programMode: boolean) {
+	public async connect(conf, programMode: boolean) {
 
 		// Set the target device
 		const device: string = conf.toolsSet[0].targetDevice[0];
-		this.write(`Device ${device}`);
+		this.write(`Device ${device}`, ConnectionLevel.none);
+
+		this.connectionLevel = ConnectionLevel.deviceSet;
 
 		// Get the tool
 		const tool = conf.toolsSet[0].platformTool[0];
@@ -230,14 +266,14 @@ export class MDBCommunications extends EventEmitter {
 
 					// Values with '{' in it, needs resolved... idk how to do
 					if (!value.includes('{') && value.length > 0) {
-						this.query(`set ${key} ${value}`);
+						this.query(`set ${key} ${value}`, ConnectionLevel.deviceSet);
 					}
 				}
 			});
 		}
 
 		// Connect to the tools
-		let message: string = await this.query(`HwTool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`);
+		let message: string = await this.query(`HwTool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet);
 
 		if (message.length < 3) {
 			message = await this.readResult();
@@ -246,6 +282,8 @@ export class MDBCommunications extends EventEmitter {
 		if (!message.match(/Target device (.+) found\./)) {
 			throw new Error(`Failed to connect to target device ${message.replace(/^\>+|\>+$/g, '').trim()}`);
 		}
+
+		this.connectionLevel = ConnectionLevel.connected;
 	}
 
 	public async startDebugger(program: string, configuration = 'default', stopOnEntry = false) {
@@ -276,13 +314,16 @@ export class MDBCommunications extends EventEmitter {
 				if (elfFiles.length > 0) {
 					let elfFile = elfFiles[0].name;
 
-					const programResult = await this.query(`Program "${path.join(elfFolder, elfFile)}"`);
+					const programResult = await this.query(`Program "${path.join(elfFolder, elfFile)}"`, ConnectionLevel.connected);
 					if (programResult.match(/Program succeeded\./)) {
 						if (stopOnEntry) {
 							this.emit('stopOnEntry');
 						} else {
 							this.run();
 						}
+
+						this.connectionLevel = ConnectionLevel.programed;
+
 					} else {
 						throw new Error('Failure to write program to device');
 					}
@@ -296,16 +337,16 @@ export class MDBCommunications extends EventEmitter {
 	}
 
 	public clearBreakpoints() {
-		this.query('delete');
+		this.query('delete', ConnectionLevel.programed);
 	}
 
 	public clearBreakpoint(id: number) {
-		this.query(`delete ${id}`);
+		this.query(`delete ${id}`, ConnectionLevel.programed);
 	}
 
 	public async setBreakpoint(file: string, line: bigint): Promise<ISetBreakpointResponse> {
 
-		return this.query(`break ${path.basename(file)}:${line}`).then(response => {
+		return this.query(`break ${path.basename(file)}:${line}`, ConnectionLevel.programed).then(response => {
 			let r = response.match(/Breakpoint (\d+) at file (.+), line (\d+)\./s);
 
 			return r ? { id: parseInt(r[1]), line: parseInt(r[3]), verified: true } :
@@ -315,7 +356,7 @@ export class MDBCommunications extends EventEmitter {
 
 	public async getBreakpoints(): Promise<Array<IGetBreakpointResponse> | void> {
 
-		return this.query('info break').then(response => {
+		return this.query('info break', ConnectionLevel.programed).then(response => {
 			let re = [...response.matchAll(/(\d+)\s*(y|n)\s*(0x[\dA-F]+)\s*at (.*):(\d+)/g)];
 
 			return re.forEach((m, i) => {
@@ -336,7 +377,7 @@ export class MDBCommunications extends EventEmitter {
 	private lastParameters: Array<IVariable> | undefined;
 	public async getStack(): Promise<Array<IGetStackResponse> | void> {
 
-		return this.query('backtrace full').then(response => {
+		return this.query('backtrace full', ConnectionLevel.programed).then(response => {
 
 			let localsMatches = [...response.matchAll(/\s+(\w+) = 0x(\d+)/g)];
 
@@ -380,23 +421,23 @@ export class MDBCommunications extends EventEmitter {
 	}
 
 	public run(): void {
-		this.write('Run');
+		this.write('Run', ConnectionLevel.programed);
 	}
 
 	public continue(): void {
-		this.write('Continue');
+		this.write('Continue', ConnectionLevel.programed);
 	}
 
 	public step(machineInstruction: boolean = false): void {
-		this.write(machineInstruction ? 'Stepi' : 'Step');
+		this.write(machineInstruction ? 'Stepi' : 'Step', ConnectionLevel.programed);
 	}
 
 	public next(): void {
-		this.write('Next');
+		this.write('Next', ConnectionLevel.programed);
 	}
 
 	public halt(): void {
-		this.write('Halt');
+		this.write('Halt', ConnectionLevel.programed);
 	}
 
 	public quit(): void {
@@ -415,7 +456,7 @@ export class MDBCommunications extends EventEmitter {
 			command += ` ${passCount}`;
 		}
 
-		return this.query(command).then(response => {
+		return this.query(command, ConnectionLevel.programed).then(response => {
 			let re = response.match(/Watchpoint (\d+)\./);
 
 			if (re) {
@@ -441,7 +482,7 @@ export class MDBCommunications extends EventEmitter {
 			name = parseInt(hexMatch[1]).toString();
 		}
 
-		return this.query(`Print ${name}`).then(response => {
+		return this.query(`Print ${name}`, ConnectionLevel.programed).then(response => {
 			const re = response.match(/(\w+)=\n?(\d+)/);
 
 			if (re) {
@@ -455,13 +496,11 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
-	private
-
 	/** Disposes the assistant */
 	public dispose() {
-		this.disposed = true;
-		if (this._mdbProcess) {
-			this.write('Quit');
+		if (!this.disposed && this._mdbProcess) {
+			this._write('Quit', ConnectionLevel.none);
 		}
+		this.disposed = true;
 	}
 }
