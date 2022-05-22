@@ -112,9 +112,9 @@ export class MplabxDebugSession extends LoggingDebugSession {
 
 			let category: string;
 			switch (type) {
-				case 'prio': category = 'important'; break;
+				case 'important': category = 'important'; break;
 				case 'out': category = 'stdout'; break;
-				case 'err': category = 'stderr'; break;
+				case 'error': category = 'stderr'; break;
 				default: category = 'console'; break;
 			}
 			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}`, category);

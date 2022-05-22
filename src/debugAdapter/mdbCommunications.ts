@@ -80,6 +80,7 @@ export enum LogLevel {
 	read,
 	info,
 	error,
+	important,
 }
 
 /** A helper class for finding all the MPLABX things */
@@ -152,7 +153,7 @@ export class MDBCommunications extends EventEmitter {
 
 	private log(input: string, logLevel: LogLevel) {
 		this._mdbLogger?.write(`${logLevel === LogLevel.error ? '[Error] ' : ''}${input}`);
-		this.emit('output', input, logLevel);
+		this.emit('output', input, LogLevel[logLevel]);
 	}
 
 	private logLine(input: string, logLevel: LogLevel) {
