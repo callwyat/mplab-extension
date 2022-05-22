@@ -1,6 +1,6 @@
 # VSLABX (MPLABX Extension)
 
-An extension that enables building MPLABX projects from within Visual Studio Code
+An extension that enables building and debugging MPLABX projects from within Visual Studio Code
 
 ## VSLABX Prerequisites
 
@@ -62,3 +62,38 @@ To create a build task:
     * Press enter to select a build task
 * Select "MPLABX Build"
 * Now running the build command will build the selected project
+
+## Program
+TODO: Implement
+## Debug
+
+### Setup Debugging
+Debugging is setup by adding the `MPLABX: Debug Launch` configuration to the launch.json file.
+
+```
+{
+    "type": "mplabx",
+    "request": "launch",
+    "name": "MPLABX Debug",
+    "program": "${workspaceFolder}/",
+    "stopOnEntry": true,
+    "preLaunchTask": "MPLABX Build"
+}
+```
+
+If a launch.json file has not been created, one can be created by going to the debug tab in the side bar and clicking `create a launch.json file`, and selecting `MPLABX: Debug`.
+
+All programer settings are pulled from the project file in `nbproject/configuration.xml`. This includes what tool to use and any voltage settings. If programer settings need to be changed, it is recommended to change them from withing MPLABX to prevent corrupting the project.
+
+### Running Debugger
+Use F5 or the run button on the debugger tab. The `preLaunchTask` item in the configuration will call the build task before connecting to the hwtool, programing, and starting. These tasks can take a while to execute.
+
+### Debugger Notes
+The names of programers do not match between the configuration file and the mdb tool. As such, the names of the tools need to matched up manually. If you would like to use a tool that is not listed below, please [submit an issue on GitHub](https://github.com/callwyat/mplab-extension/issues) with the name of the tool listed in `nbproject\configuration` e.g. (`<platformTool>pk4hybrid</platformTool>`)
+
+### Supported Tools
+- PICKit3
+- PICKit4
+- Simulator
+    - Stimulus files are not yet supported
+    - Submit an issue if you would like stimulus support

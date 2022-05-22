@@ -1,7 +1,7 @@
 {
   "name": "vslabx-extension",
   "displayName": "VSLABX (MPLABX Extension)",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "publisher": "ya-technologies",
   "description": "Build, Program, and Debug MPLABX Projects.",
   "author": {
@@ -145,7 +145,8 @@
             "request": "launch",
             "name": "MPLABX Debug",
             "program": "${workspaceFolder}/",
-            "stopOnEntry": true
+            "stopOnEntry": true,
+            "preLaunchTask": "MPLABX Build"
           }
         ],
         "configurationSnippets": [
@@ -156,8 +157,9 @@
               "type": "mplabx",
               "request": "launch",
               "name": "MPLABX Debug",
-              "program": "^\"\\${workspaceFolder}/\"",
-              "stopOnEntry": true
+              "program": "${workspaceFolder}/",
+              "stopOnEntry": true,
+              "preLaunchTask": "MPLABX Build"
             }
           }
         ],

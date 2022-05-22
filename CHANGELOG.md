@@ -1,3 +1,14 @@
+## 0.1.0
+* First release with debugger support!
+    * Breakpoints support
+    * Primitive variables can be read
+        * Automatically for Local variables and Parameter variables
+        * By adding an evaluation statement
+        * Hovering over the name of the variable
+    * Tool Support
+        * PICKit3
+        * PICKit4
+        * Simulator
 ## 0.0.6
 * Removed the requirement for ".X" to be in the path for the build commands
 * Added problem matches for MPASM builds
