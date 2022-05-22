@@ -116,6 +116,9 @@ export class MDBCommunications extends EventEmitter {
 		super();
 
 		this._mdbLogger = logger;
+		// (Windows Compatablity) Trim off quotes if there are any
+		mdbPath = mdbPath.replace(/"/g, "",);
+		
 		this._mdbProcess = spawn(mdbPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 		this.logLine(`--- Started Microchip Debugger ---`, LogLevel.info);
 
