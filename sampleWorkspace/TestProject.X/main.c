@@ -2,9 +2,8 @@
  * File:   main.c
  * Author: callwyat
  *
- * Created on March 14, 2022, 11:54 AM
+ * Created on May 19, 2022, 9:26 AM
  */
-
 
 
 // PIC18F46J53 Configuration Bit Settings
@@ -12,20 +11,20 @@
 // 'C' source line config statements
 
 // CONFIG1L
-#pragma config WDTEN = ON       // Watchdog Timer (Enabled)
+#pragma config WDTEN = OFF      // Watchdog Timer (Disabled - Controlled by SWDTEN bit)
 #pragma config PLLDIV = 1       // PLL Prescaler Selection (No prescale (4 MHz oscillator input drives PLL directly))
 #pragma config CFGPLLEN = OFF   // PLL Enable Configuration Bit (PLL Disabled)
 #pragma config STVREN = ON      // Stack Overflow/Underflow Reset (Enabled)
-#pragma config XINST = OFF      // Extended Instruction Set (Enabled)
+#pragma config XINST = OFF      // Extended Instruction Set (Disabled)
 
 // CONFIG1H
 #pragma config CPUDIV = OSC1    // CPU System Clock Postscaler (No CPU system clock divide)
 #pragma config CP0 = OFF        // Code Protect (Program memory is not code-protected)
 
 // CONFIG2L
-#pragma config OSC = ECPLL      // Oscillator (EC+PLL (CLKO-RA6), USB-EC+PLL)
+#pragma config OSC = INTOSC     // Oscillator (INTOSC)
 #pragma config SOSCSEL = HIGH   // T1OSC/SOSC Power Selection Bits (High Power T1OSC/SOSC circuit selected)
-#pragma config CLKOEC = ON      // EC Clock Out Enable Bit  (CLKO output enabled on the RA6 pin)
+#pragma config CLKOEC = OFF     // EC Clock Out Enable Bit  (CLKO output disabled on the RA6 pin)
 #pragma config FCMEN = ON       // Fail-Safe Clock Monitor (Enabled)
 #pragma config IESO = ON        // Internal External Oscillator Switch Over Mode (Enabled)
 
@@ -58,7 +57,50 @@
 
 #include <xc.h>
 
+typedef enum  {
+    Test1,
+    Test2,
+    Test3,
+} TestEnum;
+
+typedef struct {
+    unsigned TestBit1 : 1;
+    unsigned TestBit2 : 1;
+    char Test1;
+    TestEnum Test2;
+    int Test3;
+    char TestArray[16];
+} TestStruct;
+
+typedef union {
+    struct {
+        char TestArray[20];
+    };
+    
+    struct {
+        TestStruct TestStruct;
+    };
+} TestUnion;
+
+void IncTest(char* pnt)
+{
+    ++(*pnt);
+}
 
 void main(void) {
-    return;
+    
+    char test = 0;
+    test = 1;
+    test = 2;
+    test = 3;
+    
+    TestEnum testEnum = Test1;
+    
+    TestStruct testStruct;
+    
+    testStruct.Test2 = testEnum;
+    
+    while (1){
+        IncTest(&test);
+    }
 }
