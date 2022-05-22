@@ -18,3 +18,5 @@ mock-debug.txt
 /nbproject/Makefile-*.mk
 
 /src/archive/
+/src/tests/projects/debug-test.X/build/
+/src/tests/projects/debug-test.X/dist/

@@ -11,16 +11,16 @@
  */
 
 import {
-	Logger, logger,
+	// Logger, logger,
 	LoggingDebugSession,
-	InitializedEvent, TerminatedEvent, StoppedEvent, BreakpointEvent, OutputEvent,
-	ProgressStartEvent, ProgressUpdateEvent, ProgressEndEvent, InvalidatedEvent,
-	Thread, StackFrame, Scope, Source, Handles, Breakpoint, MemoryEvent, Variable
+	InitializedEvent, StoppedEvent, OutputEvent,
+	Thread, StackFrame, Scope, Source, Handles, Breakpoint, Variable,
+	// ProgressStartEvent, ProgressUpdateEvent, ProgressEndEvent, InvalidatedEvent,
+	// TerminatedEvent, BreakpointEvent, MemoryEvent, 
 } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { basename } from 'path-browserify';
 import { Subject } from 'await-notify';
-import * as base64 from 'base64-js';
 import { FileAccessor } from '../common/FileAccessor';
 import { IVariable, MDBCommunications } from './mdbCommunications';
 import { MPLABXPaths } from '../common/mplabPaths';
@@ -57,15 +57,16 @@ export class MplabxDebugSession extends LoggingDebugSession {
 
 	private _cancellationTokens = new Map<number, boolean>();
 
-	private _reportProgress = false;
-	private _progressId = 10000;
-	private _cancelledProgressId: string | undefined = undefined;
-	private _isProgressCancellable = true;
+	// private _reportProgress = false;
+	// private _progressId = 10000;
+	// private _cancelledProgressId: string | undefined = undefined;
+	// private _isProgressCancellable = true;
 
-	private _valuesInHex = false;
-	private _useInvalidatedEvent = false;
+	// private _valuesInHex = false;
+	// private _useInvalidatedEvent = false;
 
-	private _addressesInHex = true;
+	// private _addressesInHex = true;
+
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -110,7 +111,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		this._runtime.on('output', (text, type) => {
 
 			let category: string;
-			switch(type) {
+			switch (type) {
 				case 'prio': category = 'important'; break;
 				case 'out': category = 'stdout'; break;
 				case 'err': category = 'stderr'; break;
@@ -132,12 +133,12 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	 */
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 
-		if (args.supportsProgressReporting) {
-			this._reportProgress = true;
-		}
-		if (args.supportsInvalidatedEvent) {
-			this._useInvalidatedEvent = true;
-		}
+		// if (args.supportsProgressReporting) {
+		// 	this._reportProgress = true;
+		// }
+		// if (args.supportsInvalidatedEvent) {
+		// 	this._useInvalidatedEvent = true;
+		// }
 
 		// build and return the capabilities of this debug adapter:
 		response.body = response.body || {};
@@ -315,7 +316,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
 
 		this._runtime.getStack().then(stk => {
-			if (stk){
+			if (stk) {
 				response.body = {
 					stackFrames: stk.map((f, ix) => {
 						const sf: DebugProtocol.StackFrame = new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line));
@@ -335,19 +336,19 @@ export class MplabxDebugSession extends LoggingDebugSession {
 			this.sendResponse(response);
 		});
 
-		
+
 
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
 
-		let scopes : DebugProtocol.Scope[] = [];
+		let scopes: DebugProtocol.Scope[] = [];
 
-		if (this._runtime.hasLocalVariables){
+		if (this._runtime.hasLocalVariables) {
 			scopes = scopes.concat(new Scope("Locals", this._variableHandles.create('locals'), false));
 		}
 
-		if (this._runtime.hasParameters){
+		if (this._runtime.hasParameters) {
 			scopes = scopes.concat(new Scope("Parameters", this._variableHandles.create('parameters'), false));
 		}
 
@@ -397,14 +398,14 @@ export class MplabxDebugSession extends LoggingDebugSession {
 
 	protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
 
-		let vs: IVariable[] = []; 
-		
+		let vs: IVariable[] = [];
+
 		const v = this._variableHandles.get(args.variablesReference);
 		if (v === 'locals') {
 			vs = await this._runtime.getLocalVariables();
 		} else if (v === 'parameters') {
 			vs = await this._runtime.getParameters();
-		} 
+		}
 
 		response.body = {
 			variables: [...vs.map(v => new Variable(v.name, v.value.toString()))]
@@ -514,7 +515,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 			case 'watch':
 				let watch = await this._runtime.printVariable(args.expression);
 
-				if (watch){
+				if (watch) {
 					rv = new Variable(watch.name, watch.value.toString());
 				} else {
 					reply = 'Out of Scope';
@@ -686,9 +687,9 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		if (args.requestId) {
 			this._cancellationTokens.set(args.requestId, true);
 		}
-		if (args.progressId) {
-			this._cancelledProgressId = args.progressId;
-		}
+		// if (args.progressId) {
+		// 	this._cancelledProgressId = args.progressId;
+		// }
 	}
 
 	// protected disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments) {
@@ -841,13 +842,13 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	// 	return dapVariable;
 	// }
 
-	private formatAddress(x: number, pad = 8) {
-		return this._addressesInHex ? '0x' + x.toString(16).padStart(8, '0') : x.toString(10);
-	}
+	// private formatAddress(x: number, pad = 8) {
+	// 	return this._addressesInHex ? '0x' + x.toString(16).padStart(8, '0') : x.toString(10);
+	// }
 
-	private formatNumber(x: number) {
-		return this._valuesInHex ? '0x' + x.toString(16) : x.toString(10);
-	}
+	// private formatNumber(x: number) {
+	// 	return this._valuesInHex ? '0x' + x.toString(16) : x.toString(10);
+	// }
 
 	private createSource(filePath: string): Source {
 		return new Source(basename(filePath), this.convertDebuggerPathToClient(filePath), undefined, undefined, 'mock-adapter-data');

@@ -3,7 +3,7 @@
  *--------------------------------------------------------*/
 
 'use strict';
-import { windows, linux, macos } from 'platform-detect';
+import * as platformDetect from 'platform-detect';
 import * as vscode from 'vscode';
 import { MPLABXPaths } from './common/mplabPaths';
 
@@ -31,7 +31,7 @@ export class MPLABXAssistant {
 			let command: string = `${this.paths.mplabxMakefileGeneratorPath} -v ` +
 			(definition.configuration ? (`.@${definition.configuration}\"`) : ".");
 
-			if (windows) {
+			if (platformDetect.windows) {
 				command = `"${command}"`;
 			}
 
@@ -43,8 +43,8 @@ export class MPLABXAssistant {
 			new vscode.ShellExecution(command,
 					{ 
 					cwd: definition.projectFolder,
-					executable: windows ? 'cmd' : undefined,
-					shellArgs: windows ? ['/d', '/c'] : undefined
+					executable: platformDetect.windows ? 'cmd' : undefined,
+					shellArgs: platformDetect.windows ? ['/d', '/c'] : undefined
 				})
 		);
 	}
@@ -57,7 +57,7 @@ export class MPLABXAssistant {
 				(definition.configuration ? (` CONF=\"${definition.configuration}\"`) : "") +
 				" clean";
 
-			if (windows) {
+			if (platformDetect.windows) {
 				command = `"${command}"`;
 			}
 
@@ -69,8 +69,8 @@ export class MPLABXAssistant {
 			new vscode.ShellExecution(command,
 				 { 
 					cwd: definition.projectFolder,
-					executable: windows ? 'cmd' : undefined,
-					shellArgs: windows ? ['/d', '/c'] : undefined
+					executable: platformDetect.windows ? 'cmd' : undefined,
+					shellArgs: platformDetect.windows ? ['/d', '/c'] : undefined
 				})
 		);
 	}
@@ -85,7 +85,7 @@ export class MPLABXAssistant {
 
 			let command: string = `${this.paths.mplabxMakePath} CONF=\"${config}\"${debugString}`;
 
-			if (windows) {
+			if (platformDetect.windows) {
 				command = `"${command}"`;
 			}
 
@@ -97,8 +97,8 @@ export class MPLABXAssistant {
 			new vscode.ShellExecution(command,
 				 { 
 					cwd: definition.projectFolder,
-					executable: windows ? 'cmd' : undefined,
-					shellArgs: windows ? ['/d', '/c'] : undefined
+					executable: platformDetect.windows ? 'cmd' : undefined,
+					shellArgs: platformDetect.windows ? ['/d', '/c'] : undefined
 				}),
 			'$xc'
 		);

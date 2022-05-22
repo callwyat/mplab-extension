@@ -17,8 +17,6 @@
 
 import * as Net from 'net';
 import * as vscode from 'vscode';
-import { join } from 'path';
-import { platform } from 'process';
 import { ProviderResult } from 'vscode';
 import { MplabxDebugSession } from './debugAdapter/mplabxDebug';
 import { activateMplabxDebug, workspaceFileAccessor } from './debugAdapter/activateMplabxDebug';

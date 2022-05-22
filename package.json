@@ -144,7 +144,7 @@
             "type": "mplabx",
             "request": "launch",
             "name": "MPLABX Debug",
-            "program": "${workspaceFolder}/}",
+            "program": "${workspaceFolder}/",
             "stopOnEntry": true
           }
         ],

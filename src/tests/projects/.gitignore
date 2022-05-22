@@ -1,0 +1,10 @@
+
+# MPLABX Project Files
+/build/
+/debug/
+/dist/
+
+/nbproject/private/
+Makefile-*.mk
+Makefile-*.properties
+Package-*.bash

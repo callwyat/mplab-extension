@@ -17,6 +17,11 @@ enum ConnectionLevel {
 	connected,
 	programed,
 }
+
+enum ConnectionType {
+	simulator,
+	hardware,
+}
 export interface IConnectResult {
 	success: boolean,
 	message: string,
@@ -242,10 +247,11 @@ export class MDBCommunications extends EventEmitter {
 	/** A dictionary translating Configuration tool names to MDB tool names */
 	private confToMdBNames = {
 		"PICkit3PlatformTool": "PICKit3",
-		"pk4hybrid": "PICKit4"
+		"pk4hybrid": "PICKit4",
+		"Simulator": "Sim",
 	};
 
-	public async connect(conf, programMode: boolean) {
+	public async connect(conf, programMode: boolean): Promise<ConnectionType> {
 
 		// Set the target device
 		const device: string = conf.toolsSet[0].targetDevice[0];
@@ -279,11 +285,15 @@ export class MDBCommunications extends EventEmitter {
 			message = await this.readResult();
 		}
 
-		if (!message.match(/Target device (.+) found\./)) {
+		let result : ConnectionType = tool === "Simulator" ? ConnectionType.simulator : ConnectionType.hardware;
+
+		if (result === ConnectionType.hardware && !message.match(/Target device (.+) found\./)) {
 			throw new Error(`Failed to connect to target device ${message.replace(/^\>+|\>+$/g, '').trim()}`);
 		}
 
 		this.connectionLevel = ConnectionLevel.connected;
+
+		return result;
 	}
 
 	public async startDebugger(program: string, configuration = 'default', stopOnEntry = false) {
@@ -300,21 +310,23 @@ export class MDBCommunications extends EventEmitter {
 			throw Error(`Failure to find a "${configuration}" configuration in ${project}`);
 		}
 
-		return this.connect(conf, false).then(async () => {
+		return this.connect(conf, false).then(async (connectionType) => {
 			// Program the chip
 
 			// Find the elf
-			let elfFolder = path.join(program, 'dist', configuration ? configuration : 'default', 'production');
+			let outputFolder = path.join(program, 'dist', configuration ? configuration : 'default', 'production');
 
-			if (fs.existsSync(elfFolder)) {
-				let elfFiles = fs.readdirSync(elfFolder, { withFileTypes: true })
+			const fileType : string = '.elf';
+
+			if (fs.existsSync(outputFolder)) {
+				let outputFiles = fs.readdirSync(outputFolder, { withFileTypes: true })
 					.filter(item => item.isFile())
-					.filter(item => path.extname(item.name) === '.elf');
+					.filter(item => path.extname(item.name) === fileType);
 
-				if (elfFiles.length > 0) {
-					let elfFile = elfFiles[0].name;
+				if (outputFiles.length > 0) {
+					let outputFile = outputFiles[0].name;
 
-					const programResult = await this.query(`Program "${path.join(elfFolder, elfFile)}"`, ConnectionLevel.connected);
+					const programResult = await this.query(`Program "${path.join(outputFolder, outputFile)}"`, ConnectionLevel.connected);
 					if (programResult.match(/Program succeeded\./)) {
 						if (stopOnEntry) {
 							this.emit('stopOnEntry');
@@ -328,10 +340,10 @@ export class MDBCommunications extends EventEmitter {
 						throw new Error('Failure to write program to device');
 					}
 				} else {
-					throw new Error('Failure to find an "elf" file to write to device');
+					throw new Error(`Failure to find a "${fileType}" file to write to device`);
 				}
 			} else {
-				throw new Error(`Failure to find the output folder: ${elfFolder}`);
+				throw new Error(`Failure to find the output folder: ${outputFolder}`);
 			}
 		});
 	}
