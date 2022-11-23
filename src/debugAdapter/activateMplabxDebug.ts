@@ -22,9 +22,6 @@ export function activateMplabxDebug(context: vscode.ExtensionContext, factory?: 
 		factory = new InlineDebugAdapterFactory();
 	}
 	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('mplabx', factory));
-	if ('dispose' in factory) {
-		context.subscriptions.push(factory);
-	}
 }
 
 class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
