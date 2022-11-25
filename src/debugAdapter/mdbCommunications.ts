@@ -205,8 +205,7 @@ export class MDBCommunications extends EventEmitter {
 
 	/**
 	 * Handles a "Stop at" message from output. Swallows responses until entirety of "Stop at" message has been chunked out
-	 * @param initialMessage 
-	 * @returns 
+	 * @param initialMessage The initial message containing "Stop at" and potentially more of the data
 	 */
 	private async handleStopAt(initialMessage: string): Promise<void> {
 		let message = initialMessage;
