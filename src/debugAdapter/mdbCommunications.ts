@@ -203,11 +203,18 @@ export class MDBCommunications extends EventEmitter {
 		return result;
 	}
 
+	/**
+	 * Handles a "Stop at" message from output. Swallows responses until entirety of "Stop at" message has been chunked out
+	 * @param initialMessage 
+	 * @returns 
+	 */
 	private async handleStopAt(initialMessage: string): Promise<void> {
 		let message = initialMessage;
 		let matches = message.match(/address:(0x.{8})|file:(.+)|source line:(\d+)/gm);
 
-		if ((matches?.length || 0) < 2) {
+		// Stop at message may or may not come in a single data or over multiple. 
+		// If we don't match the pattern, we need to keep reading and re-parse when a full message has been received.
+		if ((matches?.length || 0) < 2) { 
 			const remainingResult = await this.readResult();
 			message += remainingResult;
 		}
@@ -218,8 +225,8 @@ export class MDBCommunications extends EventEmitter {
 
 		const [_, _address, file, line] = matches;
 
+		// Find potential breakpoint based on file name and line - if this does not exist, it must be an exception.
 		const breakpoint = this._breakpoints.find(bp => (normalizePath(bp.file) === normalizePath(file)) && bp.line === parseInt(line, 10));
-
 		if (!breakpoint) {
 			this.emit('stopOnException');
 		}
