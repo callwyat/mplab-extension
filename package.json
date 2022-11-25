@@ -135,6 +135,10 @@
                 "type": "boolean",
                 "description": "Enable logging of the Debug Adapter Protocol.",
                 "default": true
+              },
+              "configuration": {
+                "type": "string",
+                "description": "The configuration of the project to build"
               }
             }
           }
@@ -146,7 +150,8 @@
             "name": "MPLABX Debug",
             "program": "${workspaceFolder}/",
             "stopOnEntry": true,
-            "preLaunchTask": "MPLABX Build"
+            "preLaunchTask": "MPLABX Build",
+            "configuration": "default"
           }
         ],
         "configurationSnippets": [
@@ -159,7 +164,8 @@
               "name": "MPLABX Debug",
               "program": "${workspaceFolder}/",
               "stopOnEntry": true,
-              "preLaunchTask": "MPLABX Build"
+              "preLaunchTask": "MPLABX Build",
+              "configuration": "default"
             }
           }
         ],
@@ -191,6 +197,10 @@
           "configuration": {
             "type": "string",
             "description": "The configuration of the project to build"
+          },
+          "debug": {
+            "type": "boolean",
+            "description": "Boolean indicating debug build or production build"
           }
         }
       }

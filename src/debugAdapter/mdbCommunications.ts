@@ -10,6 +10,7 @@ import path = require('path');
 import fs = require('fs');
 import { EventEmitter } from 'stream';
 import { debug } from 'console';
+import { normalizePath } from '../common/mdbPaths';
 
 enum ConnectionLevel {
 	none,
@@ -31,18 +32,19 @@ export interface IDebuggerStartResult {
 	success: boolean,
 	message: string,
 }
-export interface ISetBreakpointResponse {
+
+export interface IBreakpoint {
 	id: number;
 	line: number;
+	file: string;
+}
+export interface ISetBreakpointResponse extends IBreakpoint {
 	verified: boolean;
 }
 
-export interface IGetBreakpointResponse {
-	id: number;
+export interface IGetBreakpointResponse extends IBreakpoint {
 	enabled: boolean;
 	address: number;
-	file: string;
-	line: number;
 }
 
 export interface IGetStackResponse {
@@ -91,6 +93,8 @@ export class MDBCommunications extends EventEmitter {
 	private _mdbLogger: ILogWriter | undefined;
 	private _mdbMutex: Mutex = new Mutex();
 
+	private _breakpoints: IBreakpoint[] = [];
+
 	private _connectionLevel: ConnectionLevel = ConnectionLevel.none;
 	private get connectionLevel(): ConnectionLevel {
 		return this._connectionLevel;
@@ -126,12 +130,12 @@ export class MDBCommunications extends EventEmitter {
 			debug(`MDB ERROR -> ${error}`);
 		});
 
-		this._mdbProcess.stdout?.on('data', (data: String) => {
+		this._mdbProcess.stdout?.on('data', async (data: String) => {
 			let d: string = `${data}`;
 			this.log(d, LogLevel.read);
 
 			if (d.match(/Stop at/g)) {
-				this.emit('stopOnBreakpoint');
+				this.handleStopAt(d);
 			}
 		});
 
@@ -197,6 +201,30 @@ export class MDBCommunications extends EventEmitter {
 		} while (!result.endsWith('>'));
 
 		return result;
+	}
+
+	private async handleStopAt(initialMessage: string): Promise<void> {
+		let message = initialMessage;
+		let matches = message.match(/address:(0x.{8})|file:(.+)|source line:(\d+)/gm);
+
+		if ((matches?.length || 0) < 2) {
+			const remainingResult = await this.readResult();
+			message += remainingResult;
+		}
+
+		matches = message.match(/address:(0x.{8})|file:(.+)|source line:(\d+)/gm);
+
+		if (!matches?.length) return;
+
+		const [_, address, file, line] = matches;
+
+		const breakpoint = this._breakpoints.find(bp => (normalizePath(bp.file) === normalizePath(file)) && bp.line === parseInt(line, 10));
+
+		if (!breakpoint) {
+			this.emit('stopOnException');
+		}
+
+		this.emit('stopOnBreakpoint');
 	}
 
 	/** Sends a command to the Microchip Debugger and returns the whole response
@@ -300,7 +328,7 @@ export class MDBCommunications extends EventEmitter {
 		return result;
 	}
 
-	public async startDebugger(program: string, configuration = 'default', stopOnEntry = false) {
+	public async startDebugger(program: string, configuration = 'default', debug = false, stopOnEntry = false) {
 
 		let project = await MplabxConfigFile.read(program);
 
@@ -318,7 +346,7 @@ export class MDBCommunications extends EventEmitter {
 			// Program the chip
 
 			// Find the elf
-			let outputFolder = path.join(program, 'dist', configuration ? configuration : 'default', 'production');
+			let outputFolder = path.join(program, 'dist', configuration ? configuration : 'default', debug ? 'debug' : 'production');
 
 			const fileType : string = '.elf';
 
@@ -353,11 +381,15 @@ export class MDBCommunications extends EventEmitter {
 	}
 
 	public clearBreakpoints() {
-		this.query('delete', ConnectionLevel.programed);
+		this.query('delete', ConnectionLevel.programed).then(() => {
+			this._breakpoints = [];
+		});
 	}
 
 	public clearBreakpoint(id: number) {
-		this.query(`delete ${id}`, ConnectionLevel.programed);
+		this.query(`delete ${id}`, ConnectionLevel.programed).then(() => {
+			this._breakpoints = this._breakpoints.filter(bp => bp.id !== id);
+		});
 	}
 
 	public async setBreakpoint(file: string, line: bigint): Promise<ISetBreakpointResponse> {
@@ -365,8 +397,13 @@ export class MDBCommunications extends EventEmitter {
 		return this.query(`break ${path.basename(file)}:${line}`, ConnectionLevel.programed).then(response => {
 			let r = response.match(/Breakpoint (\d+) at file (.+), line (\d+)\./s);
 
-			return r ? { id: parseInt(r[1]), line: parseInt(r[3]), verified: true } :
-				{ id: -1, line: -1, verified: false };
+			if (!r) { return { id: -1, line: -1, verified: false, file }; };
+
+			const breakpoint = { id: parseInt(r[1]), line: parseInt(r[3]), file, verified: true };
+
+			this._breakpoints.push(breakpoint);
+
+			return breakpoint;
 		});
 	}
 
@@ -413,7 +450,7 @@ export class MDBCommunications extends EventEmitter {
 				};
 			});
 
-			let stackMatches = [...response.matchAll(/#(\d+)\s+(\w+)\s+\(.*\)\s+at\s(.+):(\d+)/g)];
+			let stackMatches = [...response.matchAll(/#(\d+)\s+([a-zA-z0-9_ ]*) \(\) at\s(.*?):(\d+)/g)];
 
 			return stackMatches.map((m, i) => {
 				return {

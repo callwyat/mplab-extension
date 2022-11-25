@@ -97,13 +97,13 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		// this._runtime.on('stopOnInstructionBreakpoint', () => {
 		// 	this.sendEvent(new StoppedEvent('instruction breakpoint', MplabxDebugSession.threadID,));
 		// });
-		// this._runtime.on('stopOnException', (exception) => {
-		// 	if (exception) {
-		// 		this.sendEvent(new StoppedEvent(`exception(${exception})`, MplabxDebugSession.threadID,));
-		// 	} else {
-		// 		this.sendEvent(new StoppedEvent('exception', MplabxDebugSession.threadID,));
-		// 	}
-		// });
+		this._runtime.on('stopOnException', (exception) => {
+		 	if (exception) {
+		 		this.sendEvent(new StoppedEvent(`exception(${exception})`, MplabxDebugSession.threadID,));
+		 	} else {
+		 		this.sendEvent(new StoppedEvent('exception', MplabxDebugSession.threadID,));
+		 	}
+		});
 		// this._runtime.on('breakpointValidated', (bp: IRuntimeBreakpoint) => {
 		// 	this.sendEvent(new BreakpointEvent('changed', { verified: bp.verified, id: bp.id } as DebugProtocol.Breakpoint));
 		// });
@@ -199,7 +199,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: ILaunchRequestArguments) {
 
 		// start the program in the runtime
-		this._runtime.startDebugger(args.program, args.configuration, !!args.stopOnEntry).then(r => {
+		this._runtime.startDebugger(args.program, args.configuration, !args.noDebug, !!args.stopOnEntry).then(r => {
 			response.success = true;
 			this.sendResponse(response);
 		}).catch(reason => {
