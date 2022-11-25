@@ -216,7 +216,7 @@ export class MDBCommunications extends EventEmitter {
 
 		if (!matches?.length) return;
 
-		const [_, address, file, line] = matches;
+		const [_, _address, file, line] = matches;
 
 		const breakpoint = this._breakpoints.find(bp => (normalizePath(bp.file) === normalizePath(file)) && bp.line === parseInt(line, 10));
 
