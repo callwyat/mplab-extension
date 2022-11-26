@@ -40,6 +40,9 @@ interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 
 	/** Automatically stop target after launch. If not specified, target does not stop. */
 	stopOnEntry?: boolean;
+
+	/** Boolean indicating whether to build and launch a debug build or a production build */
+	debug?: boolean;
 }
 
 
@@ -199,7 +202,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: ILaunchRequestArguments) {
 
 		// start the program in the runtime
-		this._runtime.startDebugger(args.program, args.configuration, !args.noDebug, !!args.stopOnEntry).then(r => {
+		this._runtime.startDebugger(args.program, args.configuration, args.debug, !!args.stopOnEntry).then(r => {
 			response.success = true;
 			this.sendResponse(response);
 		}).catch(reason => {

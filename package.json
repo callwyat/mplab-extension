@@ -123,7 +123,7 @@
             "properties": {
               "program": {
                 "type": "string",
-                "description": "Absolute path to the elf file",
+                "description": "Absolute path to the project folder (e.g. TestProject.X) to pick up a configuration file from",
                 "default": "${workspaceFolder}/${command:AskForProgramName}"
               },
               "stopOnEntry": {
@@ -139,6 +139,10 @@
               "configuration": {
                 "type": "string",
                 "description": "The configuration of the project to build"
+              },
+              "debug": {
+                "type": "boolean",
+                "description": "Boolean indicating debug build or production build"
               }
             }
           }
@@ -151,7 +155,8 @@
             "program": "${workspaceFolder}/",
             "stopOnEntry": true,
             "preLaunchTask": "MPLABX Build",
-            "configuration": "default"
+            "configuration": "default",
+            "debug": true
           }
         ],
         "configurationSnippets": [
@@ -165,7 +170,8 @@
               "program": "${workspaceFolder}/",
               "stopOnEntry": true,
               "preLaunchTask": "MPLABX Build",
-              "configuration": "default"
+              "configuration": "default",
+              "debug": true
             }
           }
         ],

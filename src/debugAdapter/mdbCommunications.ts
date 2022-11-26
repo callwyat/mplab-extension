@@ -208,8 +208,9 @@ export class MDBCommunications extends EventEmitter {
 	 * @param initialMessage The initial message containing "Stop at" and potentially more of the data
 	 */
 	private async handleStopAt(initialMessage: string): Promise<void> {
+		const breakpointRegex = /address:(0x.{8})|file:(.+)|source line:(\d+)/gm;
 		let message = initialMessage;
-		let matches = message.match(/address:(0x.{8})|file:(.+)|source line:(\d+)/gm);
+		let matches = message.match(breakpointRegex);
 
 		// Stop at message may or may not come in a single data or over multiple. 
 		// If we don't match the pattern, we need to keep reading and re-parse when a full message has been received.
@@ -218,7 +219,7 @@ export class MDBCommunications extends EventEmitter {
 			message += remainingResult;
 		}
 
-		matches = message.match(/address:(0x.{8})|file:(.+)|source line:(\d+)/gm);
+		matches = message.match(breakpointRegex);
 
 		if (!matches?.length) return;
 

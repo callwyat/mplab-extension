@@ -10,7 +10,8 @@
             "name": "MPLABX Debug",
             "program": "${workspaceFolder}/TestProject.X",
             "stopOnEntry": true,
-            "preLaunchTask": "MPLABX Build"
+            "preLaunchTask": "MPLABX Build",
+            "debug": true
         }
     ]
 }
