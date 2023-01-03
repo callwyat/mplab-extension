@@ -231,7 +231,7 @@ export class MDBCommunications extends EventEmitter {
 			return; // Early return, as stopAt otherwise checks exceptions and breakpoints
 		}
 
-		const breakpointRegex = /address:(0x.{8})|file:(.+)|source line:(\d+)/gm;
+		const breakpointRegex = /address:(0x.{2,8})|file:(.+)|source line:(\d+)/gm;
 		let message = initialMessage;
 		let matches = message.match(breakpointRegex);
 
