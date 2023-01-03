@@ -88,9 +88,15 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		this._runtime.on('stopOnEntry', () => {
 			this.sendEvent(new StoppedEvent('entry', MplabxDebugSession.threadID,));
 		});
-		// this._runtime.on('stopOnStep', () => {
-		// 	this.sendEvent(new StoppedEvent('step', MplabxDebugSession.threadID,));
-		// });
+
+		this._runtime.on('stopOnStep', () => {
+		 	this.sendEvent(new StoppedEvent('step', MplabxDebugSession.threadID,));
+		});
+
+		this._runtime.on('stopOnPause', () => {
+			this.sendEvent(new StoppedEvent('pause', MplabxDebugSession.threadID,));
+	   });
+
 		this._runtime.on('stopOnBreakpoint', () => {
 			this.sendEvent(new StoppedEvent('breakpoint', MplabxDebugSession.threadID,));
 		});

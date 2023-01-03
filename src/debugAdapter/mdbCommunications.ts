@@ -85,6 +85,20 @@ export enum LogLevel {
 	important,
 }
 
+export enum HaltReason {
+	none,
+	halt,
+	step,
+	next
+}
+
+export const haltReasonEventMap = {
+	[HaltReason.none]: "stopOnException",
+	[HaltReason.next]: "stopOnStep",
+	[HaltReason.step]: "stopOnStep",
+	[HaltReason.halt]: "stopOnPause"
+} as const;
+
 /** A helper class for finding all the MPLABX things */
 export class MDBCommunications extends EventEmitter {
 
@@ -94,6 +108,7 @@ export class MDBCommunications extends EventEmitter {
 	private _mdbMutex: Mutex = new Mutex();
 
 	private _breakpoints: IBreakpoint[] = [];
+	private _haltReason: HaltReason = HaltReason.none;
 
 	private _connectionLevel: ConnectionLevel = ConnectionLevel.none;
 	private get connectionLevel(): ConnectionLevel {
@@ -193,12 +208,13 @@ export class MDBCommunications extends EventEmitter {
 	}
 
 	/** Reads the whole response to a command from the Microchip Debugger */
-	private async readResult(): Promise<string> {
+	private async readResult(until: string = '>', maxReadTime: number = 10000): Promise<string> {
 
+		let initialTime = Date.now();
 		let result: string = '';
 		do {
 			result += await this.readLine();
-		} while (!result.endsWith('>'));
+		} while (!result.includes(until) && ((Date.now() - initialTime) < maxReadTime));
 
 		return result;
 	}
@@ -208,6 +224,13 @@ export class MDBCommunications extends EventEmitter {
 	 * @param initialMessage The initial message containing "Stop at" and potentially more of the data
 	 */
 	private async handleStopAt(initialMessage: string): Promise<void> {
+		// Asssume we're setting this correctly and can trust it to early return if the stop is user generated in some sense
+		if (this._haltReason != HaltReason.none) {
+			const eventToDispatch = haltReasonEventMap[this._haltReason];
+			this.emit(eventToDispatch);
+			return; // Early return, as stopAt otherwise checks exceptions and breakpoints
+		}
+
 		const breakpointRegex = /address:(0x.{8})|file:(.+)|source line:(\d+)/gm;
 		let message = initialMessage;
 		let matches = message.match(breakpointRegex);
@@ -320,7 +343,8 @@ export class MDBCommunications extends EventEmitter {
 		// Connect to the tools
 		let message: string = await this.query(`HwTool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet);
 
-		if (message.length < 3) {
+		// If message is just the default > output, keep reading. On different platforms, \r\n> may be the case, but we're looking for a longer string anyway.
+		if (message.length < 8) { 
 			message = await this.readResult();
 		}
 
@@ -366,7 +390,7 @@ export class MDBCommunications extends EventEmitter {
 					let outputFile = outputFiles[0].name;
 
 					const programResult = await this.query(`Program "${path.join(outputFolder, outputFile)}"`, ConnectionLevel.connected);
-					if (programResult.match(/Program succeeded\./)) {
+					if (programResult.match(/Program succeeded\./) || programResult.match(/Programming\/Verify complete/)) {
 						if (stopOnEntry) {
 							this.emit('stopOnEntry');
 						} else {
@@ -496,22 +520,27 @@ export class MDBCommunications extends EventEmitter {
 	}
 
 	public run(): void {
+		this._haltReason = HaltReason.none;
 		this.write('Run', ConnectionLevel.programed);
 	}
 
 	public continue(): void {
+		this._haltReason = HaltReason.none;
 		this.write('Continue', ConnectionLevel.programed);
 	}
 
 	public step(machineInstruction: boolean = false): void {
+		this._haltReason = HaltReason.step;
 		this.write(machineInstruction ? 'Stepi' : 'Step', ConnectionLevel.programed);
 	}
 
 	public next(): void {
+		this._haltReason = HaltReason.next;
 		this.write('Next', ConnectionLevel.programed);
 	}
 
 	public halt(): void {
+		this._haltReason = HaltReason.halt;
 		this.write('Halt', ConnectionLevel.programed);
 	}
 
