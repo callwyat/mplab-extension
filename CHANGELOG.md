@@ -1,3 +1,8 @@
+## 0.1.2
+* Credit goes to [David Alexander Bjerremose](https://github.com/DaBs) for this update!
+    * Added support for `stopped on exception` and `paused on step` events
+    * Added a `debug` setting to the debugger settings
+    * Full implemented support to debug more then the default configuration
 ## 0.1.1
 * Address Security Notifications
 ## 0.1.0
