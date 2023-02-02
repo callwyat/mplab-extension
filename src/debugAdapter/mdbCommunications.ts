@@ -225,13 +225,13 @@ export class MDBCommunications extends EventEmitter {
 	 */
 	private async handleStopAt(initialMessage: string): Promise<void> {
 		// Assume we're setting this correctly and can trust it to early return if the stop is user generated in some sense
-		if (this._haltReason != HaltReason.none) {
+		if (this._haltReason !== HaltReason.none) {
 			const eventToDispatch = haltReasonEventMap[this._haltReason];
 			this.emit(eventToDispatch);
 			return; // Early return, as stopAt otherwise checks exceptions and breakpoints
 		}
 
-		const addressRegex = /address:(?<address>0x[0-9a-fA-F]{2,8})/gm;
+		// const addressRegex = /address:(?<address>0x[0-9a-fA-F]{2,8})/gm;
 		const fileRegex = /file:(?<file>.+)/gm;
 		const lineRegex = /source line:(?<line>\d+)/gm;
 
@@ -245,7 +245,7 @@ export class MDBCommunications extends EventEmitter {
 			message += remainingResult;
 		}
 
-		const _address = addressRegex.exec(message)?.groups?.address;
+		// const _address = addressRegex.exec(message)?.groups?.address;
 		const file = fileRegex.exec(message)?.groups?.file;
 		const line = parseInt(lineRegex.exec(message)?.groups?.line || '-1', 10);
 
