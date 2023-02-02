@@ -135,7 +135,7 @@ export class MDBCommunications extends EventEmitter {
 		super();
 
 		this._mdbLogger = logger;
-		// (Windows Compatablity) Trim off quotes if there are any
+		// (Windows Compatibility) Trim off quotes if there are any
 		mdbPath = mdbPath.replace(/"/g, "",);
 		
 		this._mdbProcess = spawn(mdbPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
@@ -224,32 +224,35 @@ export class MDBCommunications extends EventEmitter {
 	 * @param initialMessage The initial message containing "Stop at" and potentially more of the data
 	 */
 	private async handleStopAt(initialMessage: string): Promise<void> {
-		// Asssume we're setting this correctly and can trust it to early return if the stop is user generated in some sense
+		// Assume we're setting this correctly and can trust it to early return if the stop is user generated in some sense
 		if (this._haltReason != HaltReason.none) {
 			const eventToDispatch = haltReasonEventMap[this._haltReason];
 			this.emit(eventToDispatch);
 			return; // Early return, as stopAt otherwise checks exceptions and breakpoints
 		}
 
-		const breakpointRegex = /address:(0x.{2,8})|file:(.+)|source line:(\d+)/gm;
+		const addressRegex = /address:(?<address>0x[0-9a-fA-F]{2,8})/gm;
+		const fileRegex = /file:(?<file>.+)/gm;
+		const lineRegex = /source line:(?<line>\d+)/gm;
+
 		let message = initialMessage;
-		let matches = message.match(breakpointRegex);
+		let matches = message.match(lineRegex);
 
 		// Stop at message may or may not come in a single data or over multiple. 
 		// If we don't match the pattern, we need to keep reading and re-parse when a full message has been received.
-		if ((matches?.length || 0) < 2) { 
+		if ((matches?.length || 0) < 1) { 
 			const remainingResult = await this.readResult();
 			message += remainingResult;
 		}
 
-		matches = message.match(breakpointRegex);
+		const _address = addressRegex.exec(message)?.groups?.address;
+		const file = fileRegex.exec(message)?.groups?.file;
+		const line = parseInt(lineRegex.exec(message)?.groups?.line || '-1', 10);
 
-		if (!matches?.length) return;
-
-		const [_, _address, file, line] = matches;
+		if (!file || line < 0) { return; };
 
 		// Find potential breakpoint based on file name and line - if this does not exist, it must be an exception.
-		const breakpoint = this._breakpoints.find(bp => (normalizePath(bp.file) === normalizePath(file)) && bp.line === parseInt(line, 10));
+		const breakpoint = this._breakpoints.find(bp => (normalizePath(bp.file) === normalizePath(file)) && bp.line === line);
 		if (!breakpoint) {
 			this.emit('stopOnException');
 		}
