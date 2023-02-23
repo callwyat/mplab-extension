@@ -1,3 +1,6 @@
+## 0.1.3
+* First attempt at adding support for the ICD4Tool
+    * Thanks [Jason](https://github.com/jasonkelly214)!
 ## 0.1.2
 * Credit goes to [David Alexander Bjerremose](https://github.com/DaBs) for this update!
     * Added support for `stopped on exception` and `paused on step` events
