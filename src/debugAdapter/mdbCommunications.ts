@@ -313,6 +313,7 @@ export class MDBCommunications extends EventEmitter {
 	private confToMdBNames = {
 		"PICkit3PlatformTool": "PICKit3",
 		"pk4hybrid": "PICKit4",
+		"icd4": "ICD4Tool",
 		"Simulator": "Sim",
 	};
 
