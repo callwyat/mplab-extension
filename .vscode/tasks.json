@@ -25,6 +25,12 @@
             "type": "shell",
             "command": "vsce",
             "args": ["publish"]
+        },
+        {
+            "label": "Publish Pre Release",
+            "type": "shell",
+            "command": "vsce",
+            "args": ["publish", "--pre-release"]
         }
     ]
 }
