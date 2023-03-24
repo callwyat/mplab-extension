@@ -70,9 +70,6 @@
   "activationEvents": [
     "onDebugResolve:mplabx",
     "onCommand:extension.vslabx.getMplabxInstallLocation",
-    "onCommand:extension.vslabx.updateMakeFiles",
-    "onCommand:extension.vslabx.clean",
-    "onCommand:extension.vslabx.build",
     "workspaceContains:**/nbproject/**"
   ],
   "workspaceTrust": {

@@ -263,7 +263,7 @@ export class MDBCommunications extends EventEmitter {
 	/** Sends a command to the Microchip Debugger and returns the whole response
 	 * @param input The command to send to the debugger
 	 */
-	public async query(input: string, level: ConnectionLevel): Promise<string> {
+	public async query(input: string, level: ConnectionLevel, until: string = '>', maxReadTime: number = 10000): Promise<string> {
 
 		if (this.connectionLevel >= level) {
 			return this._mdbMutex.runExclusive(() => {
@@ -272,7 +272,7 @@ export class MDBCommunications extends EventEmitter {
 					this.mdbProcess.stdout?.read();
 				}
 
-				let result: Promise<string> = this.readResult();
+				let result: Promise<string> = this.readResult(until, maxReadTime);
 				this._write(input, level);
 
 				return result;
@@ -280,7 +280,7 @@ export class MDBCommunications extends EventEmitter {
 		} else {
 			return new Promise<string>((resolve) => {
 				this.once(level.toString(), () => {
-					this.query(input, level).then(v => resolve);
+					this.query(input, level, until, maxReadTime).then(v => resolve);
 				});
 			});
 		}
@@ -339,19 +339,22 @@ export class MDBCommunications extends EventEmitter {
 					const value: string = pair.$.value;
 
 					// Values with '{' in it, needs resolved... idk how to do
-					if (!value.includes('{') && value.length > 0) {
-						this.query(`set ${key} ${value}`, ConnectionLevel.deviceSet);
+					if (value.length > 0 && !value.match(/(\$\{.+\}|Press\sto|system settings|\.\D)/) && 
+						!key.match(/(pg[cd]resistor)/)) {
+						// this.query(`set ${key} ${value}`, ConnectionLevel.deviceSet);
 					}
 				}
 			});
 		}
 
+		const programTimeOut : number = 60000;
+
 		// Connect to the tools
-		let message: string = await this.query(`HwTool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet);
+		let message: string = await this.query(`HwTool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet, '>', programTimeOut);
 
 		// If message is just the default > output, keep reading. On different platforms, \r\n> may be the case, but we're looking for a longer string anyway.
 		if (message.length < 8) { 
-			message = await this.readResult();
+			message = await this.readResult('>', programTimeOut);
 		}
 
 		let result : ConnectionType = tool === "Simulator" ? ConnectionType.simulator : ConnectionType.hardware;
