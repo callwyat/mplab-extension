@@ -11,19 +11,9 @@ import * as vscode from 'vscode';
 /** A class to help find paths related to MPLABX */
 export class MPLABXPaths {
 
-	private version: string | undefined;
-
-	/**
-	 * A helper class for all things MPLABX
-	 * @param version Specifies the version to use, or leave undefined to use the latest version
-	 */
-	constructor(version?: string) {
-		this.version = version;
-	}
-
 	private _mplabxLocation: string = '';
 
-	/** Finds the absolute path to the latest installed version of MPLABX */
+	/** Finds the absolute path to a version of MPLABX using the VSCode Settings*/
 	get mplabxFolder(): string {
 
 		if (this._mplabxLocation === '') {
@@ -47,8 +37,10 @@ export class MPLABXPaths {
 				throw new Error(`lookup error: unknown operating system.`);
 			}
 
-			if (this.version) {
-				result = path.join(result, `v${this.version}`);
+			let version = vscode.workspace.getConfiguration('vslabx').get<string>('mplabxVersion');
+
+			if (version && version !== "latest") {
+				result = path.join(result, `v${version}`);
 			} else {
 				// find the latest installed version
 				try {
