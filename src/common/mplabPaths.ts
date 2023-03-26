@@ -6,10 +6,11 @@
 import { windows, linux, macos } from 'platform-detect';
 import path = require('path');
 import fs = require('fs');
+import * as vscode from 'vscode';
 
 /** A class to help find paths related to MPLABX */
 export class MPLABXPaths {
-	
+
 	private version: string | undefined;
 
 	/**
@@ -27,7 +28,13 @@ export class MPLABXPaths {
 
 		if (this._mplabxLocation === '') {
 			let result = '' as string;
-			if (macos) {
+
+			let config = vscode.workspace.getConfiguration('vslabx').get<string>('mplabxFolderLocation');
+
+			if (config && config !== 'default') {
+				result = config;
+			}
+			else if (macos) {
 				result = '/Applications/microchip/mplabx';
 			} else if (windows) {
 				result = 'c:\\Program Files\\Microchip\\MPLABX';

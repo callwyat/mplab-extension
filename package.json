@@ -104,6 +104,19 @@
         "language": "asm"
       }
     ],
+    "configuration":[
+      {
+        "title": "VSLABX",
+        "properties": {
+          "vslabx.mplabxFolderLocation": {
+            "type": "string",
+            "default": "default",
+            "description": "Specifies the folder where MPLABX can be found if the default finder fails to work. Example 'D:\\Microchip\\MPLABX'",
+            "scope": "machine-overridable"
+          }
+        }
+      }
+    ],
     "debuggers": [
       {
         "type": "mplabx",
