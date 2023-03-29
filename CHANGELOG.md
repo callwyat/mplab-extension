@@ -1,3 +1,11 @@
+## 0.1.7
+* Attempting to address the issues related to 4 series programming tools only rarely working
+    * Turned off sending the tool configuration from the MPLABX project file by default
+    * Tool configuration items can be allowed using the `programerToolAllowList` setting
+    * See the following issues:
+        * [Issue #1](https://github.com/callwyat/mplab-extension/issues/1)
+        * [Issue #3](https://github.com/callwyat/mplab-extension/issues/3)
+        * [Issue #6](https://github.com/callwyat/mplab-extension/issues/6)
 ## 0.1.6
 * Addressed [Issue #5](https://github.com/callwyat/mplab-extension/issues/5) by adding a `mplabxFolderLocation` setting. Found in the VSCode settings menu.
 * Added support to override the use of the latest version of MPLAB with a `mplabxVersion` setting
