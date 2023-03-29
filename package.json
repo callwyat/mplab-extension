@@ -101,7 +101,7 @@
         "language": "asm"
       }
     ],
-    "configuration":[
+    "configuration": [
       {
         "title": "VSLABX",
         "properties": {
@@ -117,6 +117,15 @@
             "description": "Specifies which version of MPLABX to use. Useful if more then one version is installed.",
             "pattern": "(latest|\\d{1,2}\\.\\d{2})",
             "patternErrorMessage": "Only 'latest' or two number version are supported. Example '5.10', '6.00 or 'latest'",
+            "scope": "machine-overridable"
+          },
+          "vslabx.programerToolAllowList": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "A list of regular expressions for programer settings to use from the MPLABX Project file (e.g. 'poweroptions.powerenable', 'voltagevalue'). Use '.*' to send all",
             "scope": "machine-overridable"
           }
         }

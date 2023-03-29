@@ -110,6 +110,8 @@ export class MDBCommunications extends EventEmitter {
 	private _breakpoints: IBreakpoint[] = [];
 	private _haltReason: HaltReason = HaltReason.none;
 
+	private _programerAllowRegex?: RegExp;
+
 	private _connectionLevel: ConnectionLevel = ConnectionLevel.none;
 	private get connectionLevel(): ConnectionLevel {
 		return this._connectionLevel;
@@ -131,10 +133,13 @@ export class MDBCommunications extends EventEmitter {
 	 * A helper class for all things MPLABX
 	 * @param mdbPath Specifies the path to the mdb debugger to use
 	 */
-	constructor(mdbPath: string, logger?: ILogWriter) {
+	constructor(mdbPath: string, logger?: ILogWriter, programerAllowRegex?: RegExp) {
 		super();
 
 		this._mdbLogger = logger;
+
+		this._programerAllowRegex = programerAllowRegex;
+
 		// (Windows Compatibility) Trim off quotes if there are any
 		mdbPath = mdbPath.replace(/"/g, "",);
 		
@@ -331,7 +336,9 @@ export class MDBCommunications extends EventEmitter {
 		const tool = conf.toolsSet[0].platformTool[0];
 
 		// Apply all the tool settings
-		if (conf[tool]) {
+		if (conf[tool] && this._programerAllowRegex) {
+			const allowRegex: RegExp = this._programerAllowRegex;
+
 			conf[tool][0].property.forEach((pair) => {
 				const key: string = pair.$.key;
 				// Keys with a capital value don't work
@@ -340,8 +347,8 @@ export class MDBCommunications extends EventEmitter {
 
 					// Values with '{' in it, needs resolved... idk how to do
 					if (value.length > 0 && !value.match(/(\$\{.+\}|Press\sto|system settings|\.\D)/) && 
-						!key.match(/(pg[cd]resistor)/)) {
-						// this.query(`set ${key} ${value}`, ConnectionLevel.deviceSet);
+						key.match(allowRegex)) {
+						this.query(`set ${key} ${value}`, ConnectionLevel.deviceSet);
 					}
 				}
 			});
