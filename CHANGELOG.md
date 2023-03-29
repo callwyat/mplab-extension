@@ -1,3 +1,8 @@
+## 0.1.6
+* Addressed [Issue #5](https://github.com/callwyat/mplab-extension/issues/5) by adding a `mplabxFolderLocation` setting. Found in the VSCode settings menu.
+* Added support to override the use of the latest version of MPLAB with a `mplabxVersion` setting
+## 0.1.5
+* Attempted to add support for the PKOB4 and ICE4 tools
 ## 0.1.4
 * Second attempt at adding support for the IDC4Tool
 ## 0.1.3

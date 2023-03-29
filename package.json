@@ -1,7 +1,7 @@
 {
   "name": "vslabx-extension",
   "displayName": "VSLABX (MPLABX Extension)",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "ya-technologies",
   "description": "Build, Program, and Debug MPLABX Projects.",
   "author": {
@@ -99,6 +99,27 @@
       },
       {
         "language": "asm"
+      }
+    ],
+    "configuration":[
+      {
+        "title": "VSLABX",
+        "properties": {
+          "vslabx.mplabxFolderLocation": {
+            "type": "string",
+            "default": "default",
+            "description": "Specifies the folder where MPLABX can be found if the default finder fails to work. Example 'D:\\Microchip\\MPLABX'",
+            "scope": "machine-overridable"
+          },
+          "vslabx.mplabxVersion": {
+            "type": "string",
+            "default": "latest",
+            "description": "Specifies which version of MPLABX to use. Useful if more then one version is installed.",
+            "pattern": "(latest|\\d{1,2}\\.\\d{2})",
+            "patternErrorMessage": "Only 'latest' or two number version are supported. Example '5.10', '6.00 or 'latest'",
+            "scope": "machine-overridable"
+          }
+        }
       }
     ],
     "debuggers": [
