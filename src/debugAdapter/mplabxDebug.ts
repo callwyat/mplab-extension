@@ -24,6 +24,7 @@ import { Subject } from 'await-notify';
 import { FileAccessor } from '../common/FileAccessor';
 import { IVariable, MDBCommunications } from './mdbCommunications';
 import { MPLABXPaths } from '../common/mplabPaths';
+import * as vscode from 'vscode';
 
 /**
  * This interface describes the mock-debug specific launch attributes
@@ -82,7 +83,11 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		this.setDebuggerLinesStartAt1(true);
 		this.setDebuggerColumnsStartAt1(true);
 
-		this._runtime = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
+		const programerAllowArray = vscode.workspace.getConfiguration('vslabx').get<string[]>('programerToolAllowList');
+		let programerAllowRegExp : RegExp | undefined = programerAllowArray && programerAllowArray.length > 0 ? 
+			RegExp(`(${programerAllowArray?.join('|')})`) : undefined;
+
+		this._runtime = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath, undefined, programerAllowRegExp);
 
 		// setup event handlers
 		this._runtime.on('stopOnEntry', () => {
@@ -90,12 +95,12 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		});
 
 		this._runtime.on('stopOnStep', () => {
-		 	this.sendEvent(new StoppedEvent('step', MplabxDebugSession.threadID,));
+			this.sendEvent(new StoppedEvent('step', MplabxDebugSession.threadID,));
 		});
 
 		this._runtime.on('stopOnPause', () => {
 			this.sendEvent(new StoppedEvent('pause', MplabxDebugSession.threadID,));
-	   });
+		});
 
 		this._runtime.on('stopOnBreakpoint', () => {
 			this.sendEvent(new StoppedEvent('breakpoint', MplabxDebugSession.threadID,));
@@ -107,11 +112,11 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		// 	this.sendEvent(new StoppedEvent('instruction breakpoint', MplabxDebugSession.threadID,));
 		// });
 		this._runtime.on('stopOnException', (exception) => {
-		 	if (exception) {
-		 		this.sendEvent(new StoppedEvent(`exception(${exception})`, MplabxDebugSession.threadID,));
-		 	} else {
-		 		this.sendEvent(new StoppedEvent('exception', MplabxDebugSession.threadID,));
-		 	}
+			if (exception) {
+				this.sendEvent(new StoppedEvent(`exception(${exception})`, MplabxDebugSession.threadID,));
+			} else {
+				this.sendEvent(new StoppedEvent('exception', MplabxDebugSession.threadID,));
+			}
 		});
 		// this._runtime.on('breakpointValidated', (bp: IRuntimeBreakpoint) => {
 		// 	this.sendEvent(new BreakpointEvent('changed', { verified: bp.verified, id: bp.id } as DebugProtocol.Breakpoint));
