@@ -1,3 +1,5 @@
+## 0.1.8
+* Added support for the J-Link programer
 ## 0.1.7
 * Attempting to address the issues related to 4 series programming tools only rarely working
     * Turned off sending the tool configuration from the MPLABX project file by default
