@@ -322,6 +322,7 @@ export class MDBCommunications extends EventEmitter {
 		"ri4hybrid": "ICE4",
 		"ICD4Tool": "icd4",
 		"Simulator": "Sim",
+		"jlink": "jlink",
 	};
 
 	public async connect(conf, programMode: boolean): Promise<ConnectionType> {
