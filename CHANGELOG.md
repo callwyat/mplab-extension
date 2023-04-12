@@ -1,3 +1,5 @@
+## 0.1.10
+* Address vulnerability warnings in npm packages
 ## 0.1.8
 * Added support for the J-Link programer
 ## 0.1.7
