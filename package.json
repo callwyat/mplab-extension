@@ -124,7 +124,9 @@
             "items": {
               "type": "string"
             },
-            "default": [],
+            "default": [
+              ".*"
+            ],
             "description": "A list of regular expressions for programer settings to use from the MPLABX Project file (e.g. 'poweroptions.powerenable', 'voltagevalue'). Use '.*' to send all",
             "scope": "machine-overridable"
           }
