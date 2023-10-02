@@ -29,7 +29,7 @@ export class MPLABXAssistant {
 
 		let args : Array<string> = [
 			'-v',
-			definition.configuration ? (`.@${definition.configuration}`) : "."
+			definition.configuration ? (`.@\"{definition.configuration}\"`) : "."
 		];
 
 		return new vscode.Task(
