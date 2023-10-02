@@ -27,9 +27,9 @@ export class MPLABXPaths {
 			else if (macos) {
 				result = '/Applications/microchip/mplabx';
 			} else if (windows) {
-				result = 'c:\\Program Files\\Microchip\\MPLABX';
+				result = 'C:\\Program Files\\Microchip\\MPLABX';
 				if (!fs.existsSync(result)) {
-					result = 'c:\\Program Files (x86)\\Microchip\\MPLABX';
+					result = 'C:\\Program Files (x86)\\Microchip\\MPLABX';
 				}
 			} else if (linux) {
 				result = '/opt/microchip/mplabx';
@@ -104,7 +104,7 @@ export class MPLABXPaths {
 		if (macos || linux) {
 			return path.join(this.mplabxPlatformFolder, 'bin', 'mdb.sh');
 		} else if (windows) {
-			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'mdb.bat')}"`;
+			return path.join(this.mplabxPlatformFolder, 'bin', 'mdb.bat');
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
@@ -114,9 +114,9 @@ export class MPLABXPaths {
 	get mplabxMakePath(): string {
 
 		if (macos || linux) {
-			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'make')}"`;
+			return path.join(this.mplabxPlatformFolder, 'bin', 'make');
 		} else if (windows) {
-			return `"${path.join(this.mplabxFolder, 'gnuBins', 'gnuWin32', 'bin', 'make.exe')}"`;
+			return path.join(this.mplabxFolder, 'gnuBins', 'gnuWin32', 'bin', 'make.exe');
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
@@ -125,9 +125,9 @@ export class MPLABXPaths {
 	/** Gets the path to the script for building all the auto-generated Makefile stuff */
 	get mplabxMakefileGeneratorPath(): string {
 		if (macos || linux) {
-			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'prjMakefilesGenerator.sh')}"`;
+			return path.join(this.mplabxPlatformFolder, 'bin', 'prjMakefilesGenerator.sh');
 		} else if (windows) {
-			return `"${path.join(this.mplabxPlatformFolder, 'bin', 'prjMakefilesGenerator.bat')}"`;
+			return path.join(this.mplabxPlatformFolder, 'bin', 'prjMakefilesGenerator.bat');
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
@@ -138,12 +138,12 @@ export class MPLABXPaths {
 
 		const ipePath: string = path.join(this.mplabxFolder, 'mplab_ipe');
 		if (macos) {
-			return `"${path.join(ipePath, 'bin', 'ipecmd.sh')}"`;
+			return path.join(ipePath, 'bin', 'ipecmd.sh');
 		} else if (linux) {
 			// TODO: This will probably not work
 			return `java -jar "${path.join(ipePath, 'ipecmd.jar')}"`;
 		} else if (windows) {
-			return `"${path.join(ipePath, 'ipecmd.exe')}"`;
+			return path.join(ipePath, 'ipecmd.exe');
 		} else {
 			throw new Error(`lookup error: unknown operating system.`);
 		}
