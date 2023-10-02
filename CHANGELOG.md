@@ -1,3 +1,6 @@
+## 0.1.11
+* Changed out the shell tasks for process tasks. This allows for the removal of most the double quoting shenanigans that windows builds needed.
+    * Hopefully this addresses [Issue #9](https://github.com/callwyat/mplab-extension/issues/9)
 ## 0.1.10
 * Address vulnerability warnings in npm packages
 ## 0.1.8
