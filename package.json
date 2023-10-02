@@ -1,7 +1,7 @@
 {
   "name": "vslabx-extension",
   "displayName": "VSLABX (MPLABX Extension)",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "publisher": "ya-technologies",
   "description": "Build, Program, and Debug MPLABX Projects.",
   "author": {
@@ -64,7 +64,7 @@
     "rimraf": "^3.0.2",
     "typescript": "^4.5.5",
     "url": "^0.11.0",
-    "vsce": "^2.15.0"
+    "vsce": "^1.97.0"
   },
   "main": "./dist/extension.js",
   "activationEvents": [
