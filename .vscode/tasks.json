@@ -30,7 +30,7 @@
             "label": "Publish Pre Release",
             "type": "shell",
             "command": "vsce",
-            "args": ["publish", "--pre-release"]
+            "args": ["publish", "--pre-release", "--no-yarn"]
         }
     ]
 }
