@@ -37,7 +37,7 @@ export class MPLABXAssistant {
 			scope ?? vscode.TaskScope.Workspace,
 			'Generate',
 			'MPLABX Make',
-			new vscode.ProcessExecution(this.paths.mplabxMakePath, args, { 
+			new vscode.ProcessExecution(this.paths.mplabxMakefileGeneratorPath, args, { 
 				cwd: definition.projectFolder
 			})
 		);
