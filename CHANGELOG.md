@@ -1,3 +1,5 @@
+## 0.1.12
+* Added support for the PicKit5 (Hopefully) [Issue #10](https://github.com/callwyat/mplab-extension/issues/10)
 ## 0.1.11
 * Changed out the shell tasks for process tasks. This allows for the removal of most the double quoting shenanigans that windows builds needed.
     * Hopefully this addresses [Issue #9](https://github.com/callwyat/mplab-extension/issues/9)

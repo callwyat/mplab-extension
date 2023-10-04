@@ -319,8 +319,11 @@ export class MDBCommunications extends EventEmitter {
 		"PICkit3PlatformTool": "PICKit3",
 		"pk4hybrid": "PICKit4",
 		"pkob4hybrid": "PKOB4",
+		"PK5Tool": "pickit5",
 		"ri4hybrid": "ICE4",
+		"ICD3Tool": "icd3",
 		"ICD4Tool": "icd4",
+		"ICD5Tool": "icd5",
 		"Simulator": "Sim",
 		"jlink": "jlink",
 	};
