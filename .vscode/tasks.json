@@ -24,7 +24,7 @@
             "label": "Publish",
             "type": "shell",
             "command": "vsce",
-            "args": ["publish"]
+            "args": ["publish", "--no-yarn"]
         },
         {
             "label": "Publish Pre Release",
