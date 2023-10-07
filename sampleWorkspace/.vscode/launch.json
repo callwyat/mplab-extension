@@ -11,7 +11,8 @@
             "program": "${workspaceFolder}/TestProject.X",
             "stopOnEntry": true,
             "preLaunchTask": "MPLABX Build",
-            "debug": true
+            "debug": true,
+            "configuration": "PIC18F46J50"
         }
     ]
 }
