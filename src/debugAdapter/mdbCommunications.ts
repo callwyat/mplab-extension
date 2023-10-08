@@ -5,7 +5,6 @@
 'use strict';
 import { ChildProcess, spawn } from 'child_process';
 import { Mutex } from 'async-mutex';
-import { MplabxConfigFile } from '../common/configFileHelper';
 import path = require('path');
 import fs = require('fs');
 import { EventEmitter } from 'stream';
@@ -110,8 +109,6 @@ export class MDBCommunications extends EventEmitter {
 	private _breakpoints: IBreakpoint[] = [];
 	private _haltReason: HaltReason = HaltReason.none;
 
-	private _programerAllowRegex?: RegExp;
-
 	private _connectionLevel: ConnectionLevel = ConnectionLevel.none;
 	private get connectionLevel(): ConnectionLevel {
 		return this._connectionLevel;
@@ -133,12 +130,10 @@ export class MDBCommunications extends EventEmitter {
 	 * A helper class for all things MPLABX
 	 * @param mdbPath Specifies the path to the mdb debugger to use
 	 */
-	constructor(mdbPath: string, logger?: ILogWriter, programerAllowRegex?: RegExp) {
+	constructor(mdbPath: string, logger?: ILogWriter) {
 		super();
 
 		this._mdbLogger = logger;
-
-		this._programerAllowRegex = programerAllowRegex;
 
 		// (Windows Compatibility) Trim off quotes if there are any
 		mdbPath = mdbPath.replace(/"/g, "",);
@@ -314,61 +309,30 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
-	/** A dictionary translating Configuration tool names to MDB tool names */
-	private confToMdBNames = {
-		"PICkit3PlatformTool": "PICKit3",
-		"pk4hybrid": "PICKit4",
-		"pkob4hybrid": "PKOB4",
-		"PK5Tool": "pickit5",
-		"ri4hybrid": "ICE4",
-		"ICD3Tool": "icd3",
-		"ICD4Tool": "icd4",
-		"ICD5Tool": "icd5",
-		"Simulator": "Sim",
-		"jlink": "jlink",
-	};
+	public async connect(targetDevice: string, toolSet: string, programMode: boolean, toolSetOptions: object = {} ): Promise<ConnectionType> {
 
-	public async connect(conf, programMode: boolean): Promise<ConnectionType> {
-
-		// Set the target device
-		const device: string = conf.toolsSet[0].targetDevice[0];
-		this.write(`Device ${device}`, ConnectionLevel.none);
-
+		this.write(`Device ${targetDevice}`, ConnectionLevel.none);
+		
 		this.connectionLevel = ConnectionLevel.deviceSet;
 
-		// Get the tool
-		const tool = conf.toolsSet[0].platformTool[0];
-
 		// Apply all the tool settings
-		if (conf[tool] && this._programerAllowRegex) {
-			const allowRegex: RegExp = this._programerAllowRegex;
-
-			conf[tool][0].property.forEach((pair) => {
-				const key: string = pair.$.key;
-				// Keys with a capital value don't work
-				if (key[0].toLowerCase() === key[0]) {
-					const value: string = pair.$.value;
-
-					// Values with '{' in it, needs resolved... idk how to do
-					if (value.length > 0 && !value.match(/(\$\{.+\}|Press\sto|system settings|\.\D)/) && 
-						key.match(allowRegex)) {
-						this.query(`set ${key} ${value}`, ConnectionLevel.deviceSet);
-					}
-				}
-			});
+		if (toolSetOptions) {
+			for (const [key, value] of Object.entries(toolSetOptions)) {
+				this.query(`set ${key} ${value}`, ConnectionLevel.deviceSet);
+			};
 		}
 
 		const programTimeOut : number = 60000;
 
 		// Connect to the tools
-		let message: string = await this.query(`HwTool ${this.confToMdBNames[tool]}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet, '>', programTimeOut);
+		let message: string = await this.query(`HwTool ${toolSet}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet, '>', programTimeOut);
 
 		// If message is just the default > output, keep reading. On different platforms, \r\n> may be the case, but we're looking for a longer string anyway.
 		if (message.length < 8) { 
 			message = await this.readResult('>', programTimeOut);
 		}
 
-		let result : ConnectionType = tool === "Simulator" ? ConnectionType.simulator : ConnectionType.hardware;
+		let result : ConnectionType = toolSet === "Sim" ? ConnectionType.simulator : ConnectionType.hardware;
 
 		if (result === ConnectionType.hardware && !message.match(/Target device (.+) found\./)) {
 			throw new Error(`Failed to connect to target device ${message.replace(/^\>+|\>+$/g, '').trim()}`);
@@ -379,54 +343,26 @@ export class MDBCommunications extends EventEmitter {
 		return result;
 	}
 
-	public async startDebugger(program: string, configuration = 'default', debug = false, stopOnEntry = false) {
-
-		let project = await MplabxConfigFile.read(program);
-
-		let confs = project.configurationDescriptor.confs;
-
-		let conf = confs.find(c => c.conf[0].$.name === configuration);
-
-		if (conf) {
-			conf = conf.conf[0];
-		} else {
-			throw Error(`Failure to find a "${configuration}" configuration in ${project}`);
+	public async startDebugger(targetDevice: string, toolSet: string, elfFile: string, toolSetOptions: object = {}, stopOnEntry = false) {
+		
+		if (!fs.existsSync(elfFile)) {
+			throw new Error(`Failure to find the given file: ${elfFile}`);
 		}
 
-		return this.connect(conf, false).then(async (connectionType) => {
+		return this.connect(targetDevice, toolSet, false, toolSetOptions).then(async (connectionType) => {
 			// Program the chip
-
-			// Find the elf
-			let outputFolder = path.join(program, 'dist', configuration ? configuration : 'default', debug ? 'debug' : 'production');
-
-			const fileType : string = '.elf';
-
-			if (fs.existsSync(outputFolder)) {
-				let outputFiles = fs.readdirSync(outputFolder, { withFileTypes: true })
-					.filter(item => item.isFile())
-					.filter(item => path.extname(item.name) === fileType);
-
-				if (outputFiles.length > 0) {
-					let outputFile = outputFiles[0].name;
-
-					const programResult = await this.query(`Program "${path.join(outputFolder, outputFile)}"`, ConnectionLevel.connected);
-					if (programResult.match(/Program succeeded\./) || programResult.match(/Programming\/Verify complete/)) {
-						if (stopOnEntry) {
-							this.emit('stopOnEntry');
-						} else {
-							this.run();
-						}
-
-						this.connectionLevel = ConnectionLevel.programed;
-
-					} else {
-						throw new Error('Failure to write program to device');
-					}
+			const programResult = await this.query(`Program "${elfFile}"`, ConnectionLevel.connected);
+			if (programResult.match(/Program succeeded\./) || programResult.match(/Programming\/Verify complete/)) {
+				if (stopOnEntry) {
+					this.emit('stopOnEntry');
 				} else {
-					throw new Error(`Failure to find a "${fileType}" file to write to device`);
+					this.run();
 				}
+
+				this.connectionLevel = ConnectionLevel.programed;
+
 			} else {
-				throw new Error(`Failure to find the output folder: ${outputFolder}`);
+				throw new Error('Failure to write program to device');
 			}
 		});
 	}

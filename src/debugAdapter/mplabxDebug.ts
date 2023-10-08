@@ -25,6 +25,10 @@ import { FileAccessor } from '../common/FileAccessor';
 import { IVariable, MDBCommunications } from './mdbCommunications';
 import { MPLABXPaths } from '../common/mplabPaths';
 import * as vscode from 'vscode';
+import { MplabxConfigFile } from '../common/configFileHelper';
+import path = require('path');
+import fs = require('fs');
+
 
 /**
  * This interface describes the mock-debug specific launch attributes
@@ -83,11 +87,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		this.setDebuggerLinesStartAt1(true);
 		this.setDebuggerColumnsStartAt1(true);
 
-		const programerAllowArray = vscode.workspace.getConfiguration('vslabx').get<string[]>('programerToolAllowList');
-		let programerAllowRegExp : RegExp | undefined = programerAllowArray && programerAllowArray.length > 0 ? 
-			RegExp(`(${programerAllowArray?.join('|')})`) : undefined;
-
-		this._runtime = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath, undefined, programerAllowRegExp);
+		this._runtime = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath, undefined);
 
 		// setup event handlers
 		this._runtime.on('stopOnEntry', () => {
@@ -210,18 +210,105 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		this._configurationDone.notify();
 	}
 
+	/** A dictionary translating Configuration tool names to MDB tool names */
+	private confToMdBNames = {
+		"PICkit3PlatformTool": "PICKit3",
+		"pk4hybrid": "PICKit4",
+		"pkob4hybrid": "PKOB4",
+		"PK5Tool": "pickit5",
+		"ri4hybrid": "ICE4",
+		"ICD3Tool": "icd3",
+		"ICD4Tool": "icd4",
+		"ICD5Tool": "icd5",
+		"Simulator": "Sim",
+		"jlink": "jlink",
+	};
+
 	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: ILaunchRequestArguments) {
 
-		// start the program in the runtime
-		this._runtime.startDebugger(args.program, args.configuration, args.debug, !!args.stopOnEntry).then(r => {
-			response.success = true;
-			this.sendResponse(response);
-		}).catch(reason => {
+		try {
+			let project = await MplabxConfigFile.read(args.program);
+			let confs = project.configurationDescriptor.confs;
+
+			let conf = confs.find(c => c.conf[0].$.name === args.configuration);
+		
+			if (conf) {
+				conf = conf.conf[0];
+			} else {
+				throw Error(`Failure to find a "${args.configuration}" configuration in ${project}`);
+			}
+
+			// Get the tool
+			let tool = conf.toolsSet[0].platformTool[0];
+			const device: string = conf.toolsSet[0].targetDevice[0];
+			
+			// Find the elf
+			let outputFolder = path.join(args.program, 'dist', args.configuration ? args.configuration : 'default', args.debug ? 'debug' : 'production');
+
+			const fileType : string = '.elf';
+
+			if (fs.existsSync(outputFolder)) {
+				let outputFiles = fs.readdirSync(outputFolder, { withFileTypes: true })
+					.filter(item => item.isFile())
+					.filter(item => path.extname(item.name) === fileType);
+
+				if (outputFiles.length > 0) {
+					let outputFile = outputFiles[0].name;
+
+					const programerAllowArray = vscode.workspace.getConfiguration('vslabx').get<string[]>('programerToolAllowList');
+					const programerAllowRegExp : RegExp | undefined = programerAllowArray && programerAllowArray.length > 0 ? 
+						RegExp(`(${programerAllowArray?.join('|')})`) : undefined;
+
+					let toolOptions: any = {};
+					
+					// Collect all the tool settings
+					if (conf[tool] && programerAllowRegExp) {
+						const allowRegex: RegExp = programerAllowRegExp;
+
+						conf[tool][0].property.forEach((pair) => {
+							const key: string = pair.$.key;
+							// Keys with a capital value don't work
+							if (key[0].toLowerCase() === key[0]) {
+								const value: string = pair.$.value;
+
+								// Values with '{' in it, needs resolved... idk how to do
+								if (value.length > 0 && !value.match(/(\$\{.+\}|Press\sto|system settings|\.\D)/) && 
+									key.match(allowRegex)) {
+
+									toolOptions[key] = value;
+								}
+							}
+						});
+					}
+
+					// Convert from a project name to an MDB name
+					if (tool in this.confToMdBNames) {
+						tool = this.confToMdBNames[tool];
+					}
+
+					// start the program in the runtime
+					this._runtime.startDebugger(device, tool, path.join(outputFolder, outputFile), toolOptions, !!args.stopOnEntry).then(r => {
+						response.success = true;
+						this.sendResponse(response);
+					}).catch(reason => {
+						response.success = false;
+						response.message = reason.message;
+						response.command = reason.message;
+						this.sendResponse(response);
+					});
+
+				} else {
+					throw new Error(`Failure to find a "${fileType}" file to write to device`);
+				}
+			} else {
+				throw new Error(`Failure to find the output folder: ${outputFolder}`);
+			}
+		} catch (e: any) {
 			response.success = false;
-			response.message = reason.message;
-			response.command = reason.message;
+			response.message = e.message;
+			response.command = e.message;
 			this.sendResponse(response);
-		});
+		}
 	}
 
 	protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
