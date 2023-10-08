@@ -18,7 +18,7 @@
 import * as Net from 'net';
 import * as vscode from 'vscode';
 import { ProviderResult } from 'vscode';
-import { MplabxDebugSession } from './debugAdapter/mplabxDebug';
+import { MdbDebugSession } from './debugAdapter/mplabxDebug';
 import { activateMplabxDebug, workspaceFileAccessor } from './debugAdapter/activateMplabxDebug';
 import { MPLABXAssistant, MpMakeTaskDefinition } from './mplabxAssistant';
 import { MPLABXPaths } from './common/mplabPaths';
@@ -27,7 +27,7 @@ import { MPLABXPaths } from './common/mplabPaths';
  * The compile time flag 'runMode' controls how the debug adapter is run.
  * Please note: the test suite only supports 'external' mode.
  */
-const runMode: 'external' | 'server' | 'namedPipeServer' | 'inline' = 'inline';
+const runMode: 'external' | 'server' | 'namedPipeServer' | 'inline' = 'server';
 
 const mplabxAssistant = new MPLABXAssistant();
 
@@ -35,19 +35,16 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// debug adapters can be run in different ways by using a vscode.DebugAdapterDescriptorFactory:
 	switch (runMode) {
-		case 'server':
+		case 'server': default:
 			// run the debug adapter as a server inside the extension and communicate via a socket
-			activateMplabxDebug(context, new MplabxDebugAdapterServerDescriptorFactory());
-			break;
-
-		case 'external': default:
-			// run the debug adapter as a separate process
-			activateMplabxDebug(context, new DebugAdapterExecutableFactory());
+			activateMplabxDebug(context, 'mplabx', new MdbDebugAdapterServerDescriptorFactory());
+			activateMplabxDebug(context, 'mdb', new MdbDebugAdapterServerDescriptorFactory());
 			break;
 
 		case 'inline':
 			// run the debug adapter inside the extension and directly talk to it
-			activateMplabxDebug(context);
+			activateMplabxDebug(context, 'mplabx', new MdbInlineDebugAdapterFactory());
+			activateMplabxDebug(context, 'mdb', new MdbInlineDebugAdapterFactory());
 			break;
 	}
 	
@@ -135,34 +132,7 @@ async function selectMplabxProjectFolder(): Promise<string | undefined> {
 export function deactivate() {
 }
 
-class DebugAdapterExecutableFactory implements vscode.DebugAdapterDescriptorFactory {
-
-	// The following use of a DebugAdapter factory shows how to control what debug adapter executable is used.
-	// Since the code implements the default behavior, it is absolutely not neccessary and we show it here only for educational purpose.
-
-	createDebugAdapterDescriptor(_session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): ProviderResult<vscode.DebugAdapterDescriptor> {
-		// param "executable" contains the executable optionally specified in the package.json (if any)
-
-		// use the executable specified in the package.json if it exists or determine it based on some other information (e.g. the session)
-		if (!executable) {
-			const command = "absolute path to my DA executable";
-			const args = [
-				"some args",
-				"another arg"
-			];
-			const options = {
-				cwd: "working directory for executable",
-				env: { "envVariable": "some value" }
-			};
-			executable = new vscode.DebugAdapterExecutable(command, args, options);
-		}
-
-		// make VS Code launch the DA executable
-		return executable;
-	}
-}
-
-class MplabxDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDescriptorFactory {
+class MdbDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDescriptorFactory {
 
 	private server?: Net.Server;
 
@@ -171,7 +141,7 @@ class MplabxDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDe
 		if (!this.server) {
 			// start listening on a random port
 			this.server = Net.createServer(socket => {
-				const session = new MplabxDebugSession(workspaceFileAccessor);
+				const session = new MdbDebugSession(workspaceFileAccessor);
 				session.setRunAsServer(true);
 				session.start(socket as NodeJS.ReadableStream, socket);
 			}).listen(0);
@@ -185,6 +155,13 @@ class MplabxDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDe
 		if (this.server) {
 			this.server.close();
 		}
+	}
+}
+
+class MdbInlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+
+	createDebugAdapterDescriptor(_session: vscode.DebugSession): ProviderResult<vscode.DebugAdapterDescriptor> {
+		return new vscode.DebugAdapterInlineImplementation(new MdbDebugSession(workspaceFileAccessor));
 	}
 }
 

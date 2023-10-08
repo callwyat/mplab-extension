@@ -1,5 +1,6 @@
 import path = require("path");
-import xml2js = require('xml2js');
+import { readFileSync } from "fs";
+import { readFile } from "fs/promises";
 
 export class MplabxConfigFile {
 
@@ -7,12 +8,19 @@ export class MplabxConfigFile {
 
         let configPath: string = path.join(projectPath, 'nbproject', 'configurations.xml');
 
-        const { promises: { readFile } } = require("fs");
-
         return readFile(configPath).then((data) => {
-            var parser = new xml2js.Parser();
+            var xml = require('pixl-xml');
 
-            return parser.parseStringPromise(data);
+            return xml.parse(data);
         });
+    }
+
+    public static readSync(projectPath: string): any {
+
+        let configPath: string = path.join(projectPath, 'nbproject', 'configurations.xml');
+
+        var xml = require('pixl-xml');
+
+        return xml.parse(readFileSync(configPath));
     }
 }

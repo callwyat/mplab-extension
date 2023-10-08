@@ -1,3 +1,7 @@
+# 0.1.13
+* Finally figured out why non-default configurations would fail to debug! [Issue #4](https://github.com/callwyat/mplab-extension/issues/4)
+* Added a second debug configuration 'mdb' that allows users to directly use a `.elf` file with the debug adapter [Issue #12](https://github.com/callwyat/mplab-extension/issues/12)
+
 ## 0.1.12
 * Added support for the PicKit5 (Hopefully) [Issue #10](https://github.com/callwyat/mplab-extension/issues/10)
 ## 0.1.11

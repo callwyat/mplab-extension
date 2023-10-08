@@ -8,7 +8,7 @@
             "type": "mplabx",
             "task": "build",
             "projectFolder": "${workspaceFolder}/TestProject.X",
-            "configuration": "default",
+            "configuration": "PIC18F46J50",
             "problemMatcher": [
                 {
                     "base": "$xc",

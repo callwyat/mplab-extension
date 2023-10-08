@@ -24,11 +24,6 @@ import { Subject } from 'await-notify';
 import { FileAccessor } from '../common/FileAccessor';
 import { IVariable, MDBCommunications } from './mdbCommunications';
 import { MPLABXPaths } from '../common/mplabPaths';
-import * as vscode from 'vscode';
-import { MplabxConfigFile } from '../common/configFileHelper';
-import path = require('path');
-import fs = require('fs');
-
 
 /**
  * This interface describes the mock-debug specific launch attributes
@@ -36,28 +31,30 @@ import fs = require('fs');
  * The schema for these attributes lives in the package.json of the mock-debug extension.
  * The interface should always match this schema.
  */
-interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
-	/** An absolute path to the project to debug. */
-	program: string;
+export interface ILaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+	/** The part number of the processor to debug (e.g. PIC18F46J50) */
+	device: string;
 
-	/** The name of the configuration to debug */
-	configuration?: string;
+	/** The MDB name of the tool type to use (e.g. Sim, PICKit4, jlink)*/
+	toolType: string;
+
+	/** The absolute path to the .elf file used for debugging*/
+	filePath: string;
+
+	/** A dictionary of tool options to set. See the MPLABX configuration file for what is available*/
+	toolOptions?: any;
 
 	/** Automatically stop target after launch. If not specified, target does not stop. */
 	stopOnEntry?: boolean;
-
-	/** Boolean indicating whether to build and launch a debug build or a production build */
-	debug?: boolean;
 }
 
-
-export class MplabxDebugSession extends LoggingDebugSession {
+export class MdbDebugSession extends LoggingDebugSession {
 
 	// we don't support multiple threads, so we can use a hardcoded ID for the default thread
 	private static threadID = 1;
 
 	// a Mock runtime (or debugger)
-	private _runtime: MDBCommunications;
+	protected _runtime: MDBCommunications;
 
 	private _variableHandles = new Handles<'locals' | 'parameters'>();
 
@@ -91,31 +88,31 @@ export class MplabxDebugSession extends LoggingDebugSession {
 
 		// setup event handlers
 		this._runtime.on('stopOnEntry', () => {
-			this.sendEvent(new StoppedEvent('entry', MplabxDebugSession.threadID,));
+			this.sendEvent(new StoppedEvent('entry', MdbDebugSession.threadID,));
 		});
 
 		this._runtime.on('stopOnStep', () => {
-			this.sendEvent(new StoppedEvent('step', MplabxDebugSession.threadID,));
+			this.sendEvent(new StoppedEvent('step', MdbDebugSession.threadID,));
 		});
 
 		this._runtime.on('stopOnPause', () => {
-			this.sendEvent(new StoppedEvent('pause', MplabxDebugSession.threadID,));
+			this.sendEvent(new StoppedEvent('pause', MdbDebugSession.threadID,));
 		});
 
 		this._runtime.on('stopOnBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('breakpoint', MplabxDebugSession.threadID,));
+			this.sendEvent(new StoppedEvent('breakpoint', MdbDebugSession.threadID,));
 		});
 		// this._runtime.on('stopOnDataBreakpoint', () => {
-		// 	this.sendEvent(new StoppedEvent('data breakpoint', MplabxDebugSession.threadID,));
+		// 	this.sendEvent(new StoppedEvent('data breakpoint', MdbDebugSession.threadID,));
 		// });
 		// this._runtime.on('stopOnInstructionBreakpoint', () => {
-		// 	this.sendEvent(new StoppedEvent('instruction breakpoint', MplabxDebugSession.threadID,));
+		// 	this.sendEvent(new StoppedEvent('instruction breakpoint', MdbDebugSession.threadID,));
 		// });
 		this._runtime.on('stopOnException', (exception) => {
 			if (exception) {
-				this.sendEvent(new StoppedEvent(`exception(${exception})`, MplabxDebugSession.threadID,));
+				this.sendEvent(new StoppedEvent(`exception(${exception})`, MdbDebugSession.threadID,));
 			} else {
-				this.sendEvent(new StoppedEvent('exception', MplabxDebugSession.threadID,));
+				this.sendEvent(new StoppedEvent('exception', MdbDebugSession.threadID,));
 			}
 		});
 		// this._runtime.on('breakpointValidated', (bp: IRuntimeBreakpoint) => {
@@ -210,99 +207,20 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		this._configurationDone.notify();
 	}
 
-	/** A dictionary translating Configuration tool names to MDB tool names */
-	private confToMdBNames = {
-		"PICkit3PlatformTool": "PICKit3",
-		"pk4hybrid": "PICKit4",
-		"pkob4hybrid": "PKOB4",
-		"PK5Tool": "pickit5",
-		"ri4hybrid": "ICE4",
-		"ICD3Tool": "icd3",
-		"ICD4Tool": "icd4",
-		"ICD5Tool": "icd5",
-		"Simulator": "Sim",
-		"jlink": "jlink",
-	};
-
 	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: ILaunchRequestArguments) {
 
 		try {
-			let project = await MplabxConfigFile.read(args.program);
-			let confs = project.configurationDescriptor.confs;
+			// start the program in the runtime
+			this._runtime.startDebugger(args.device, args.toolType, args.filePath, args.toolOptions, !!args.stopOnEntry).then(r => {
+				response.success = true;
+				this.sendResponse(response);
+			}).catch(reason => {
+				response.success = false;
+				response.message = reason.message;
+				response.command = reason.message;
+				this.sendResponse(response);
+			});
 
-			let conf = confs.find(c => c.conf[0].$.name === args.configuration);
-		
-			if (conf) {
-				conf = conf.conf[0];
-			} else {
-				throw Error(`Failure to find a "${args.configuration}" configuration in ${project}`);
-			}
-
-			// Get the tool
-			let tool = conf.toolsSet[0].platformTool[0];
-			const device: string = conf.toolsSet[0].targetDevice[0];
-			
-			// Find the elf
-			let outputFolder = path.join(args.program, 'dist', args.configuration ? args.configuration : 'default', args.debug ? 'debug' : 'production');
-
-			const fileType : string = '.elf';
-
-			if (fs.existsSync(outputFolder)) {
-				let outputFiles = fs.readdirSync(outputFolder, { withFileTypes: true })
-					.filter(item => item.isFile())
-					.filter(item => path.extname(item.name) === fileType);
-
-				if (outputFiles.length > 0) {
-					let outputFile = outputFiles[0].name;
-
-					const programerAllowArray = vscode.workspace.getConfiguration('vslabx').get<string[]>('programerToolAllowList');
-					const programerAllowRegExp : RegExp | undefined = programerAllowArray && programerAllowArray.length > 0 ? 
-						RegExp(`(${programerAllowArray?.join('|')})`) : undefined;
-
-					let toolOptions: any = {};
-					
-					// Collect all the tool settings
-					if (conf[tool] && programerAllowRegExp) {
-						const allowRegex: RegExp = programerAllowRegExp;
-
-						conf[tool][0].property.forEach((pair) => {
-							const key: string = pair.$.key;
-							// Keys with a capital value don't work
-							if (key[0].toLowerCase() === key[0]) {
-								const value: string = pair.$.value;
-
-								// Values with '{' in it, needs resolved... idk how to do
-								if (value.length > 0 && !value.match(/(\$\{.+\}|Press\sto|system settings|\.\D)/) && 
-									key.match(allowRegex)) {
-
-									toolOptions[key] = value;
-								}
-							}
-						});
-					}
-
-					// Convert from a project name to an MDB name
-					if (tool in this.confToMdBNames) {
-						tool = this.confToMdBNames[tool];
-					}
-
-					// start the program in the runtime
-					this._runtime.startDebugger(device, tool, path.join(outputFolder, outputFile), toolOptions, !!args.stopOnEntry).then(r => {
-						response.success = true;
-						this.sendResponse(response);
-					}).catch(reason => {
-						response.success = false;
-						response.message = reason.message;
-						response.command = reason.message;
-						this.sendResponse(response);
-					});
-
-				} else {
-					throw new Error(`Failure to find a "${fileType}" file to write to device`);
-				}
-			} else {
-				throw new Error(`Failure to find the output folder: ${outputFolder}`);
-			}
 		} catch (e: any) {
 			response.success = false;
 			response.message = e.message;
@@ -408,7 +326,7 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		// runtime supports no threads so just return a default thread.
 		response.body = {
 			threads: [
-				new Thread(MplabxDebugSession.threadID, "Main Thread")
+				new Thread(MdbDebugSession.threadID, "Main Thread")
 			]
 		};
 		this.sendResponse(response);
@@ -955,4 +873,3 @@ export class MplabxDebugSession extends LoggingDebugSession {
 		return new Source(basename(filePath), this.convertDebuggerPathToClient(filePath), undefined, undefined, 'mock-adapter-data');
 	}
 }
-

@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import { MplabxDebugSession } from './debugAdapter/mplabxDebug';
+import { MdbDebugSession } from './debugAdapter/mplabxDebug';
 import { promises as fs } from 'fs';
 import * as Net from 'net';
 import { FileAccessor } from './common/FileAccessor';
@@ -53,14 +53,14 @@ if (port > 0) {
 		socket.on('end', () => {
 			console.error('>> client connection closed\n');
 		});
-		const session = new MplabxDebugSession(fsAccessor);
+		const session = new MdbDebugSession(fsAccessor);
 		session.setRunAsServer(true);
 		session.start(socket, socket);
 	}).listen(port);
 } else {
 
 	// start a single session that communicates via stdin/stdout
-	const session = new MplabxDebugSession(fsAccessor);
+	const session = new MdbDebugSession(fsAccessor);
 	process.on('SIGTERM', () => {
 		session.shutdown();
 	});

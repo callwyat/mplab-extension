@@ -45,7 +45,6 @@
     "@types/mocha": "^9.1.0",
     "@types/node": "^14.18.12",
     "@types/vscode": "^1.64.0",
-    "@types/xml2js": "^0.4.11",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "@vscode/debugadapter": "^1.55.0-pre.1",
@@ -140,7 +139,7 @@
           "asm"
         ],
         "label": "MPLABX Debug",
-        "program": "./out/debugAdapter.js",
+        "program": "./out/mdbDebugAdapter.js",
         "runtime": "node",
         "configurationAttributes": {
           "launch": {
@@ -199,6 +198,91 @@
               "preLaunchTask": "MPLABX Build",
               "configuration": "default",
               "debug": true
+            }
+          }
+        ],
+        "variables": {
+          "$mplabxInstallLocation": "extension.vslabx.getMplabxInstallLocation"
+        }
+      },
+      {
+        "type": "mdb",
+        "languages": [
+          "c++",
+          "c",
+          "asm"
+        ],
+        "label": "Microchip Debug Adapter",
+        "program": "./out/mdbDebugAdapter.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "device",
+              "toolType",
+              "filePath"
+            ],
+            "properties": {
+              "device": {
+                "type": "string",
+                "description": "The part number of the processor to debug (e.g. PIC18F46J50)",
+                "default": "PIC18F46J53"
+              },
+              "toolType": {
+                "type": "string",
+                "description": "The MDB name of the tool type to use (e.g. Sim, PICKit4, jlink)",
+                "default": "PICKit4"
+              },
+              "filePath": {
+                "type": "string",
+                "description": "The absolute path to the .elf file used for debugging",
+                "default": "${workspaceFolder}/dist/default/debug/${1:projectName}.X.debug.elf"
+              },
+              "toolOptions": {
+                "type": "",
+                "description": "A dictionary of tool options to set. See the MPLABX configuration file for what is available",
+                "default": {}
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Automatically stop after launch.",
+                "default": true
+              },
+              "trace": {
+                "type": "boolean",
+                "description": "Enable logging of the Debug Adapter Protocol.",
+                "default": true
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "mdb",
+            "request": "launch",
+            "name": "Microchip Debug Adapter",
+            "filePath": "${workspaceFolder}/dist/default/debug/${1:projectName}.X.debug.elf",
+            "device": "${2:PIC18F46J50}",
+            "toolType": "${3:PICKit4}",
+            "toolOptions": {},
+            "stopOnEntry": true,
+            "preLaunchTask": "MPLABX Build"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Microchip Debug Adapter",
+            "description": "A new configuration for debugging using and ELF file and Microchip's Debug Adapter",
+            "body": {
+              "type": "mdb",
+              "request": "launch",
+              "name": "Microchip Debug Adapter",
+              "filePath": "${workspaceFolder}/dist/default/debug/${1:projectName}.X.debug.elf",
+              "device": "${2:PIC18F46J50}",
+              "toolType": "${3:PICKit4}",
+              "toolOptions": {},
+              "stopOnEntry": true,
+              "preLaunchTask": "MPLABX Build"
             }
           }
         ],
@@ -295,6 +379,6 @@
     ]
   },
   "dependencies": {
-    "xml2js": "^0.5.0"
+    "pixl-xml": "^1.0.13"
   }
 }

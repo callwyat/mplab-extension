@@ -983,6 +983,8 @@
                   value="report"/>
         <property key="warningmessagebreakoptions.W0248_ADC_WR_BEFORE_KEY_SEQ"
                   value="report"/>
+        <property key="warningmessagebreakoptions.W0300_NVM_WR_BEFORE_KEY_SEQ"
+                  value="report"/>
         <property key="warningmessagebreakoptions.W0400_PWM_PWM_FASTER_THAN_FOSC"
                   value="report"/>
         <property key="warningmessagebreakoptions.W0600_WDT_2ND_WDT_MR_WRITE"
@@ -1231,7 +1233,7 @@
     <conf name="PIC18F46J50" type="2">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
-        <targetDevice>PIC18F46J50</targetDevice>
+        <targetDevice>PIC18F46J53</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
         <platformTool>Simulator</platformTool>
@@ -2188,6 +2190,8 @@
         <property key="warningmessagebreakoptions.W0247_ADC_CONVERSION_BAD_RESSEL"
                   value="report"/>
         <property key="warningmessagebreakoptions.W0248_ADC_WR_BEFORE_KEY_SEQ"
+                  value="report"/>
+        <property key="warningmessagebreakoptions.W0300_NVM_WR_BEFORE_KEY_SEQ"
                   value="report"/>
         <property key="warningmessagebreakoptions.W0400_PWM_PWM_FASTER_THAN_FOSC"
                   value="report"/>
