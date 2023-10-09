@@ -58,7 +58,7 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 			case 'mplabx': default: {
 				let projectConfig = config as unknown as ILaunchProjectRequestArguments;
 				if (folder) {
-					projectConfig.program = projectConfig.program.replace('${workspaceFolder}', folder.uri.path);
+					projectConfig.program = projectConfig.program.replace('${workspaceFolder}', folder.uri.fsPath);
 				}
 				
 				let result = this.convertProjectArgs(projectConfig) as unknown as DebugConfiguration;
