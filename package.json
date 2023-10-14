@@ -87,6 +87,14 @@
       {
         "command": "extension.vslabx.build",
         "title": "MPLABX: Build Project"
+      },
+      {
+        "command": "extension.vslabx.listSupportedTools",
+        "title": "MDB: List Supported Tool Types"
+      },
+      {
+        "command": "extension.vslabx.listAttachedTools",
+        "title": "MDB: List Attached Tools"
       }
     ],
     "breakpoints": [

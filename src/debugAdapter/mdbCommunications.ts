@@ -22,6 +22,21 @@ enum ConnectionType {
 	simulator,
 	hardware,
 }
+
+export enum HaltReason {
+	none,
+	halt,
+	step,
+	next
+}
+
+export const haltReasonEventMap = {
+	[HaltReason.none]: "stopOnException",
+	[HaltReason.next]: "stopOnStep",
+	[HaltReason.step]: "stopOnStep",
+	[HaltReason.halt]: "stopOnPause"
+} as const;
+
 export interface IConnectResult {
 	success: boolean,
 	message: string,
@@ -84,19 +99,17 @@ export enum LogLevel {
 	important,
 }
 
-export enum HaltReason {
-	none,
-	halt,
-	step,
-	next
+export interface IProgramerInformation {
+	index: number;
+	name: string;
+	type: string;
+	serialNumber: string;
+	ipAddress?: string;
 }
-
-export const haltReasonEventMap = {
-	[HaltReason.none]: "stopOnException",
-	[HaltReason.next]: "stopOnStep",
-	[HaltReason.step]: "stopOnStep",
-	[HaltReason.halt]: "stopOnPause"
-} as const;
+export interface ISupportedProgramerInformation {
+	name: string;
+	description: string;
+}
 
 /** A helper class for finding all the MPLABX things */
 export class MDBCommunications extends EventEmitter {
@@ -263,7 +276,7 @@ export class MDBCommunications extends EventEmitter {
 	/** Sends a command to the Microchip Debugger and returns the whole response
 	 * @param input The command to send to the debugger
 	 */
-	public async query(input: string, level: ConnectionLevel, until: string = '>', maxReadTime: number = 10000): Promise<string> {
+	async query(input: string, level: ConnectionLevel, until: string = '>', maxReadTime: number = 10000): Promise<string> {
 
 		if (this.connectionLevel >= level) {
 			return this._mdbMutex.runExclusive(() => {
@@ -287,7 +300,7 @@ export class MDBCommunications extends EventEmitter {
 	}
 
 	/** Gets a list of all the attached hardware tools that can program */
-	public async getAttachedProgramers(): Promise<string[]> {
+	public async getAttachedProgramers(): Promise<IProgramerInformation[]> {
 
 		return this.query("HwTool", ConnectionLevel.none).then((value) => {
 
@@ -300,12 +313,49 @@ export class MDBCommunications extends EventEmitter {
 			lines.pop();
 			lines.pop();
 
-			lines.forEach((v, index) => {
-				let cells = v.split('\t');
-				v = cells[cells.length - 1];
-			});
+			if (lines.length === 0) {
+				return [] as IProgramerInformation[];
+			}
+			
+			return lines.map((line => {
+				let match = line.match(/(?<index>\d+)\s*(?<type>[\w\d]+)\s*(?<serialNumber>[\w\d]+)\s*(?<ipAddress>[\w\/\d]+)\s*(?<name>[\w\d\s]+)/);
 
-			return lines;
+				if (match) {
+					if (match.groups) {
+						return match.groups as unknown as IProgramerInformation;
+					} else {
+						return { index: 0, name: match[0] ?? 'Unknown', type: '', serialNumber: '' };
+					}
+				} else {
+					return { index: 0, name: 'Unknown', type: '', serialNumber: '' } ;
+				}
+			}));
+		});
+	}
+
+	/** Gets a list of all supported hardware tools that can be used */
+	public async getSupportedProgramers(): Promise<ISupportedProgramerInformation[]> {
+		return this.query("HwTool Supported", ConnectionLevel.none).then((value) => {
+
+			let lines: string[] = value.split('\n');
+
+			// Skip the first line
+			lines.shift();
+
+			// Removed the last two elements
+			lines.pop();
+			lines.pop();
+
+			return lines.map(line => {
+
+				let cells = line.split('\t');
+
+				return {
+					name: cells[0],
+					// Take off the parentheses
+					description: cells[1].substring(1, cells[1].length - 1)
+				};
+			});
 		});
 	}
 

@@ -22,6 +22,7 @@ import { MdbDebugSession } from './debugAdapter/mplabxDebug';
 import { activateMplabxDebug, workspaceFileAccessor } from './debugAdapter/activateMplabxDebug';
 import { MPLABXAssistant, MpMakeTaskDefinition } from './mplabxAssistant';
 import { MPLABXPaths } from './common/mplabPaths';
+import { MDBCommunications } from './debugAdapter/mdbCommunications';
 
 /*
  * The compile time flag 'runMode' controls how the debug adapter is run.
@@ -47,9 +48,9 @@ export function activate(context: vscode.ExtensionContext) {
 			activateMplabxDebug(context, 'mdb', new MdbInlineDebugAdapterFactory());
 			break;
 	}
-	
+
 	context.subscriptions.push(
-		
+
 		vscode.commands.registerCommand('extension.vslabx.getMplabxInstallLocation', config => {
 			return new MPLABXPaths().mplabxFolder;
 		}),
@@ -88,6 +89,44 @@ export function activate(context: vscode.ExtensionContext) {
 					}));
 				}
 			});
+		}),
+
+		vscode.commands.registerCommand('extension.vslabx.listSupportedTools', () => {
+
+			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
+			vscode.window.showQuickPick(
+				mdb.getSupportedProgramers().then((supportedProgramers) => {
+
+
+					return supportedProgramers.map(item => {
+						return {
+							label: item.name,
+							description: item.description
+						};
+					});
+
+				}).finally(() => {
+					mdb.quit();
+				}), { title: 'MDB: Supported Programers' });
+		}),
+
+		vscode.commands.registerCommand('extension.vslabx.listAttachedTools', () => {
+
+			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
+			vscode.window.showQuickPick(
+				mdb.getAttachedProgramers().then((attachedProgramers) => {
+
+
+					return attachedProgramers.map(item => {
+						return {
+							label: item.name,
+							description: `${item.index}\t${item.type}\t${item.serialNumber}\t${item.ipAddress}`
+						};
+					});
+
+				}).finally(() => {
+					mdb.quit();
+				}), { title: 'MDB: Attached Programers' });
 		}),
 
 		vscode.tasks.registerTaskProvider('mplabx', {
