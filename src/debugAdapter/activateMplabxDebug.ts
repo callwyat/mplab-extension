@@ -97,7 +97,8 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 			let project = MplabxConfigFile.readSync(args.program);
 			let confs = project.confs.conf;
 
-			let conf = confs.find(c => c.name === args.configuration);
+			// If there is only one configuration, confs is already what we need, otherwise search for a configuration
+			let conf = confs.name ? confs : confs.find(c => c.name === args.configuration);
 
 			if (!conf) {
 				throw Error(`Failure to find a "${args.configuration}" configuration in ${project}`);
