@@ -61,6 +61,10 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 					projectConfig.program = projectConfig.program.replace('${workspaceFolder}', folder.uri.fsPath);
 				}
 				
+				if (!projectConfig.configuration) {
+					projectConfig.configuration = 'default';
+				}
+
 				let result = this.convertProjectArgs(projectConfig) as unknown as DebugConfiguration;
 				return result;
 			}
