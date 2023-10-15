@@ -91,12 +91,11 @@ export function activate(context: vscode.ExtensionContext) {
 			});
 		}),
 
-		vscode.commands.registerCommand('extension.vslabx.listSupportedTools', () => {
+		vscode.commands.registerCommand('extension.vslabx.listSupportedTools', title => {
 
 			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
-			vscode.window.showQuickPick(
+			return vscode.window.showQuickPick(
 				mdb.getSupportedProgramers().then((supportedProgramers) => {
-
 
 					return supportedProgramers.map(item => {
 						return {
@@ -104,29 +103,27 @@ export function activate(context: vscode.ExtensionContext) {
 							description: item.description
 						};
 					});
-
 				}).finally(() => {
 					mdb.quit();
-				}), { title: 'MDB: Supported Programers' });
+				}), { title: title ?? 'MDB: Supported Tool Types' });
 		}),
 
-		vscode.commands.registerCommand('extension.vslabx.listAttachedTools', () => {
+		vscode.commands.registerCommand('extension.vslabx.listAttachedTools', title => {
 
 			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
-			vscode.window.showQuickPick(
+			return vscode.window.showQuickPick(
 				mdb.getAttachedProgramers().then((attachedProgramers) => {
-
 
 					return attachedProgramers.map(item => {
 						return {
-							label: item.name,
-							description: `${item.index}\t${item.type}\t${item.serialNumber}\t${item.ipAddress}`
+							label: `${item.index}: ${item.name}`,
+							description: item.type,
+							detail: `Serial Number: ${item.serialNumber}\tIP Address: ${item.ipAddress}`
 						};
 					});
-
 				}).finally(() => {
 					mdb.quit();
-				}), { title: 'MDB: Attached Programers' });
+				}), { title: title ?? 'MDB: Attached Tools' });
 		}),
 
 		vscode.tasks.registerTaskProvider('mplabx', {
