@@ -1,3 +1,15 @@
+# 0.1.15
+* Fixed issue with Pre-Release 0.1.13 MPLABX: Debug not working for some projects
+* Added the following commands:
+    * MDB: List Supported Tools
+    * MDB: List Attached Tools
+* Skipping pre-release features from version 0.1.13
+* Fixed issue with the ICD3 mapping being wrong [Issue #13](https://github.com/callwyat/mplab-extension/issues/13)
+* Added debugger mapping for ICD2 (hopefully)
+
+# 0.1.14
+* Skipping a release version, 0.1.13 introduced a breaking bug for the MPLABX: Launch Debug
+
 # 0.1.13
 * Finally figured out why non-default configurations would fail to debug! [Issue #4](https://github.com/callwyat/mplab-extension/issues/4)
 * Added a second debug configuration 'mdb' that allows users to directly use a `.elf` file with the debug adapter [Issue #12](https://github.com/callwyat/mplab-extension/issues/12)
