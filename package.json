@@ -244,7 +244,7 @@
               "filePath": {
                 "type": "string",
                 "description": "The absolute path to the .elf file used for debugging",
-                "default": "${workspaceFolder}/dist/default/debug/${1:projectName}.X.debug.elf"
+                "default": "${workspaceFolder}/dist/default/debug/${1:projectName}.debug.elf"
               },
               "toolOptions": {
                 "type": "",
@@ -269,7 +269,7 @@
             "type": "mdb",
             "request": "launch",
             "name": "Microchip Debug Adapter",
-            "filePath": "${workspaceFolder}/dist/default/debug/${1:projectName}.X.debug.elf",
+            "filePath": "${workspaceFolder}/dist/default/debug/${1:projectName}.debug.elf",
             "device": "${2:PIC18F46J50}",
             "toolType": "${3:PICKit4}",
             "toolOptions": {},
@@ -285,7 +285,7 @@
               "type": "mdb",
               "request": "launch",
               "name": "Microchip Debug Adapter",
-              "filePath": "${workspaceFolder}/dist/default/debug/${1:projectName}.X.debug.elf",
+              "filePath": "${workspaceFolder}/dist/default/debug/${1:projectName}.debug.elf",
               "device": "${2:PIC18F46J50}",
               "toolType": "${3:PICKit4}",
               "toolOptions": {},
