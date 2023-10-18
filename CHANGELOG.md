@@ -1,4 +1,7 @@
-# 0.1.15
+# 0.1.16
+* The full release of 0.1.15
+
+# 0.1.15 (Pre-Release)
 * Fixed issue with Pre-Release 0.1.13 MPLABX: Debug not working for some projects
 * Added the following commands:
     * MDB: List Supported Tools
@@ -10,13 +13,13 @@
 # 0.1.14
 * Skipping a release version, 0.1.13 introduced a breaking bug for the MPLABX: Launch Debug
 
-# 0.1.13
+# 0.1.13 (Pre-Release)
 * Finally figured out why non-default configurations would fail to debug! [Issue #4](https://github.com/callwyat/mplab-extension/issues/4)
 * Added a second debug configuration 'mdb' that allows users to directly use a `.elf` file with the debug adapter [Issue #12](https://github.com/callwyat/mplab-extension/issues/12)
 
 ## 0.1.12
 * Added support for the PicKit5 (Hopefully) [Issue #10](https://github.com/callwyat/mplab-extension/issues/10)
-## 0.1.11
+## 0.1.11 (Pre-Release)
 * Changed out the shell tasks for process tasks. This allows for the removal of most the double quoting shenanigans that windows builds needed.
     * Hopefully this addresses [Issue #9](https://github.com/callwyat/mplab-extension/issues/9)
 ## 0.1.10
