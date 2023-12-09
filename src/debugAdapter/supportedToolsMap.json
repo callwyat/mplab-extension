@@ -65,5 +65,11 @@
         "mdbName": "jlink",
         "description": "J-Link",
         "validated": true
+    },
+    {
+        "projectName": "snap",
+        "mdbName": "snap",
+        "description": "MPLAB® Snap In-Circuit Debugger/Programmer",
+        "validated": true
     }
 ]
