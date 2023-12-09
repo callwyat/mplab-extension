@@ -1,3 +1,7 @@
+# 0.1.18
+* Updated the [README](./readme.md)
+* Added official support for the MPLAB Snap Debugger/Programer [Issue #17](https://github.com/callwyat/mplab-extension/issues/17)
+
 # 0.1.16
 * The full release of 0.1.15
 
