@@ -1,0 +1,69 @@
+[
+    {
+        "projectName": "PICkit3PlatformTool",
+        "mdbName": "PICKit3",
+        "description": "MPLAB® PICkit™ 3 In-Circuit Debugger",
+        "validated": true
+    },
+    {
+        "projectName": "pk4hybrid",
+        "mdbName": "PICKit4",
+        "description": "MPLAB® PICkit™ 4 In-Circuit Debugger",
+        "validated": true
+    },
+    {
+        "projectName": "pkob4hybrid",
+        "mdbName": "PKOB4",
+        "description": "The PICKit4, but built onto a board",
+        "validated": false
+    },
+    {
+        "projectName": "PK5Tool",
+        "mdbName": "pickit5",
+        "description": "MPLAB® PICkit™ 5 In-Circuit Debugger",
+        "validated": true
+    },
+    {
+        "projectName": "ri4hybrid",
+        "mdbName": "ICE4",
+        "description": "MPLAB® ICE 4 In-Circuit Emulator, Programmer and Debugger",
+        "validated": true
+    },
+    {
+        "projectName": "ICD2PlatformTool",
+        "mdbName": "icd2",
+        "description": "MPLAB ICD 2 IN-CIRCUIT DEBUGGER",
+        "validated": false
+    },
+    {
+        "projectName": "ICD3PlatformTool",
+        "mdbName": "icd3",
+        "description": "MPLAB ICD 3 IN-CIRCUIT DEBUGGER",
+        "validated": true
+    },
+    {
+        "projectName": "ICD4Tool",
+        "mdbName": "icd4",
+        "description": "MPLAB ICD 4 IN-CIRCUIT DEBUGGER",
+        "validated": true
+    },
+    {
+        "projectName": "ICD5Tool",
+        "mdbName": "icd5",
+        "description": "MPLAB ICD 5 IN-CIRCUIT DEBUGGER",
+        "validated": false
+    },
+    {
+        "projectName": "Simulator",
+        "mdbName": "Sim",
+        "description": "Simulates a chip",
+        "validated": true,
+        "notes": "Stimulus files are not yet supported"
+    },
+    {
+        "projectName": "jlink",
+        "mdbName": "jlink",
+        "description": "J-Link",
+        "validated": true
+    }
+]

@@ -22,7 +22,8 @@
 		"inlineSourceMap": false,
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
-		"noUnusedParameters": false
+		"noUnusedParameters": false,
+		"resolveJsonModule": true
 	},
 	"exclude": [
 		"node_modules"

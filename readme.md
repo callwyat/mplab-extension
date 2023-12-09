@@ -92,8 +92,6 @@ Use F5 or the run button on the debugger tab. The `preLaunchTask` item in the co
 The names of programers do not match between the configuration file and the mdb tool. As such, the names of the tools need to matched up manually. If you would like to use a tool that is not listed below, please [submit an issue on GitHub](https://github.com/callwyat/mplab-extension/issues) with the name of the tool listed in `nbproject\configuration` e.g. (`<platformTool>pk4hybrid</platformTool>`)
 
 ### Supported Tools
-- PICKit3
-- PICKit4
-- Simulator
-    - Stimulus files are not yet supported
-    - Submit an issue if you would like stimulus support
+A list of all supported tools can be found in [supportedTools.json](./src/debugAdapter/supportedToolsMap.json)
+
+Basic simulator support is available, but support for stimulus files is missing currently. If you would like support for them, please [submit an issue on GitHub](https://github.com/callwyat/mplab-extension/issues)

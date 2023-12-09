@@ -15,6 +15,7 @@ import { ILaunchRequestArguments } from './mplabxDebug';
 import { MplabxConfigFile } from '../common/configFileHelper';
 import path = require('path');
 import fs = require('fs');
+import supportedTools = require('./supportedToolsMap.json');
 
 
 export function activateMplabxDebug(context: vscode.ExtensionContext, debugType: string, factory: vscode.DebugAdapterDescriptorFactory) {
@@ -76,21 +77,6 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 		return config;
 	}
 
-	/** A dictionary translating Configuration tool names to MDB tool names */
-	private confToMdBNames = {
-		"PICkit3PlatformTool": "PICKit3",
-		"pk4hybrid": "PICKit4",
-		"pkob4hybrid": "PKOB4",
-		"PK5Tool": "pickit5",
-		"ri4hybrid": "ICE4",
-		"ICD2PlatformTool": "icd2",
-		"ICD3PlatformTool": "icd3",
-		"ICD4Tool": "icd4",
-		"ICD5Tool": "icd5",
-		"Simulator": "Sim",
-		"jlink": "jlink",
-	};
-
 	private convertProjectArgs(args: ILaunchProjectRequestArguments): ILaunchRequestArguments | undefined{
 
 		try {
@@ -148,14 +134,15 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 						});
 					}
 
-					// Convert from a project name to an MDB name
-					if (tool in this.confToMdBNames) {
-						tool = this.confToMdBNames[tool];
-					}
+					// Convert from a project name to an MDB name. If a name can't be found,
+					// try using the project name directly. It probably won't work.
+					const mdbTool = supportedTools.find((item) => {
+						return item.projectName === tool;
+					})?.mdbName ?? tool;
 
 					// Add all the properties to the result to make it work like the mdb args
 					args["device"] = device;
-					args["toolType"] = tool;
+					args["toolType"] = mdbTool;
 					args["filePath"] = path.join(outputFolder, outputFile);
 					args["toolOptions"] = toolOptions;
 					args["stopOnEntry"] = args.stopOnEntry;
