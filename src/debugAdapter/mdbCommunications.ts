@@ -593,16 +593,30 @@ export class MDBCommunications extends EventEmitter {
 		}
 
 		return this.query(`Print ${name}`, ConnectionLevel.programed).then(response => {
-			const re = response.match(/(\w+)=\n?(\d+)/);
 
-			if (re) {
-				return {
-					name: re[1],
-					value: parseFloat(re[2]),
-				};
-			} else {
-				return undefined;
+			{
+				const simpleMatch = response.match(/(?<name>\w+)=\n?(?<value>\d+)/);
+
+				if (simpleMatch?.groups) {
+					return {
+						name: simpleMatch.groups.name,
+						value: parseFloat(simpleMatch.groups.value),
+					};
+				}
 			}
+			{
+				const complexMatch = response.match(/(?<name>\w+)=\n?(?<value>\{[\s\S]*\})/);
+
+				if (complexMatch?.groups) {
+					return {
+						name: complexMatch.groups.name,
+						value: parseFloat(complexMatch.groups.value),
+					};
+				}
+			}
+
+			
+			return undefined;
 		});
 	}
 
