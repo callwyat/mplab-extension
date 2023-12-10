@@ -122,6 +122,8 @@ export class MDBCommunications extends EventEmitter {
 	private _breakpoints: IBreakpoint[] = [];
 	private _haltReason: HaltReason = HaltReason.none;
 
+	private _activeElf: any;
+
 	private _connectionLevel: ConnectionLevel = ConnectionLevel.none;
 	private get connectionLevel(): ConnectionLevel {
 		return this._connectionLevel;
@@ -399,6 +401,12 @@ export class MDBCommunications extends EventEmitter {
 			throw new Error(`Failure to find the given file: ${elfFile}`);
 		}
 
+		// Read the elf file so we can associate complex data
+		this._activeElf = undefined;
+		fs.readFile(elfFile, (err, data) => {
+			
+		});
+
 		return this.connect(targetDevice, toolSet, false, toolSetOptions).then(async (connectionType) => {
 			// Program the chip
 			const programResult = await this.query(`Program "${elfFile}"`, ConnectionLevel.connected);
@@ -608,6 +616,8 @@ export class MDBCommunications extends EventEmitter {
 				const complexMatch = response.match(/(?<name>\w+)=\n?(?<value>\{[\s\S]*\})/);
 
 				if (complexMatch?.groups) {
+
+					let la = this._activeElf;
 					return {
 						name: complexMatch.groups.name,
 						value: parseFloat(complexMatch.groups.value),
