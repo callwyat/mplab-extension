@@ -403,14 +403,12 @@ export class MDBCommunications extends EventEmitter {
 			// Program the chip
 			const programResult = await this.query(`Program "${elfFile}"`, ConnectionLevel.connected);
 			if (programResult.match(/Program succeeded\./) || programResult.match(/Programming\/Verify complete/)) {
-				if (stopOnEntry) {
-					this.emit('stopOnEntry');
-				} else {
-					this.run();
-				}
-
+				
 				this.connectionLevel = ConnectionLevel.programed;
-
+				
+				// Let everyone know initialization has completed.
+				this.emit('initCompleted');
+				
 			} else {
 				throw new Error('Failure to write program to device');
 			}

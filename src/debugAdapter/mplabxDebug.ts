@@ -58,6 +58,8 @@ export class MdbDebugSession extends LoggingDebugSession {
 
 	private _variableHandles = new Handles<'locals' | 'parameters'>();
 
+	private _stopOnEntry: boolean = false;
+
 	private _configurationDone = new Subject();
 
 	private _cancellationTokens = new Map<number, boolean>();
@@ -87,10 +89,6 @@ export class MdbDebugSession extends LoggingDebugSession {
 		this._runtime = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath, undefined);
 
 		// setup event handlers
-		this._runtime.on('stopOnEntry', () => {
-			this.sendEvent(new StoppedEvent('entry', MdbDebugSession.threadID,));
-		});
-
 		this._runtime.on('stopOnStep', () => {
 			this.sendEvent(new StoppedEvent('step', MdbDebugSession.threadID,));
 		});
@@ -131,6 +129,12 @@ export class MdbDebugSession extends LoggingDebugSession {
 			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}`, category);
 
 			this.sendEvent(e);
+		});
+
+		// When the runtime signals that it has successfully setup the target,
+		// let the client(s) know so breakpoints can be setup 
+		this._runtime.on('initCompleted', () => {
+			this.sendEvent(new InitializedEvent());
 		});
 
 		// this._runtime.on('end', () => {
@@ -189,29 +193,15 @@ export class MdbDebugSession extends LoggingDebugSession {
 		// response.body.supportsWriteMemoryRequest = true;
 
 		this.sendResponse(response);
-
-		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
-		// we request them early by sending an 'initializeRequest' to the frontend.
-		// The frontend will end the configuration sequence by calling 'configurationDone' request.
-		this.sendEvent(new InitializedEvent());
-	}
-
-	/**
-	 * Called at the end of the configuration sequence.
-	 * Indicates that all breakpoints etc. have been sent to the DA and that the 'launch' can start.
-	 */
-	protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments): void {
-		super.configurationDoneRequest(response, args);
-
-		// notify the launchRequest that configuration has finished
-		this._configurationDone.notify();
 	}
 
 	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: ILaunchRequestArguments) {
 
 		try {
 			// start the program in the runtime
-			this._runtime.startDebugger(args.device, args.toolType, args.filePath, args.toolOptions, !!args.stopOnEntry).then(r => {
+			this._runtime.startDebugger(args.device, args.toolType, args.filePath, args.toolOptions).then(r => {
+				
+				this._stopOnEntry = !!args.stopOnEntry;
 				response.success = true;
 				this.sendResponse(response);
 			}).catch(reason => {
@@ -226,6 +216,23 @@ export class MdbDebugSession extends LoggingDebugSession {
 			response.message = e.message;
 			response.command = e.message;
 			this.sendResponse(response);
+		}
+	}
+
+	/**
+	 * Called at the end of the configuration sequence.
+	 * Indicates that all breakpoints etc. have been sent to the DA and that the 'launch' can start.
+	 */
+	protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments): void {
+		super.configurationDoneRequest(response, args);
+
+		// notify the launchRequest that configuration has finished
+		this._configurationDone.notify();
+
+		if (this._stopOnEntry) {
+			this.sendEvent(new StoppedEvent('entry', MdbDebugSession.threadID));
+		} else {
+			this._runtime.run();
 		}
 	}
 
