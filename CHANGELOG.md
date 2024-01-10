@@ -1,3 +1,6 @@
+# 0.1.20
+* Bugfix: Breakpoints could fail to work until after a breakpoint was added or removed during runtime.
+
 # 0.1.18
 * Updated the [README](./readme.md)
 * Added official support for the MPLAB Snap Debugger/Programer [Issue #17](https://github.com/callwyat/mplab-extension/issues/17)
