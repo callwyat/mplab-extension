@@ -192,7 +192,7 @@ export class MDBCommunications extends EventEmitter {
 	}
 
 	private logLine(input: string, logLevel: LogLevel) {
-		this.log(`${input}\r`, logLevel);
+		this.log(`${input}\r\n`, logLevel);
 	}
 
 	private _write(input: string, level: ConnectionLevel) {
