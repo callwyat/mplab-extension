@@ -1,3 +1,7 @@
+# 0.1.21 (Pre-Release)
+* Fixed issue were the debug console would show the written and read statements on the same line
+* Addressed [Issue #19](https://github.com/callwyat/mplab-extension/issues/19) (Timeout is preventing programming from completing) by replacing timeouts with cancellation events.
+
 # 0.1.20
 * Bugfix: Breakpoints could fail to work until after a breakpoint was added or removed during runtime.
 
