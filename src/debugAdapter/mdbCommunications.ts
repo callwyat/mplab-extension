@@ -123,6 +123,9 @@ export class MDBCommunications extends EventEmitter {
 	private _haltReason: HaltReason = HaltReason.none;
 
 	private _connectionLevel: ConnectionLevel = ConnectionLevel.none;
+
+	private _emitter: EventEmitter = new EventEmitter();
+
 	private get connectionLevel(): ConnectionLevel {
 		return this._connectionLevel;
 	}
@@ -220,16 +223,30 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
-	/** Reads the whole response to a command from the Microchip Debugger */
-	private async readResult(until: string = '>', maxReadTime: number = 10000): Promise<string> {
+	/** Reads the whole response to a command from the Microchip Debugger 
+	 * @param until The string to look for that indicates the end of the message
+	*/
+	private async readResult(until: string = '>'): Promise<string> {
 
-		let initialTime = Date.now();
-		let result: string = '';
-		do {
-			result += await this.readLine();
-		} while (!result.includes(until) && ((Date.now() - initialTime) < maxReadTime));
+		return new Promise<string>(async (resolve, reject) => {
+			this._emitter.on('cancel', reject);
 
-		return result;
+			let result: string = '';
+			do {
+				result += await this.readLine();
+			} while (!result.includes(until));
+	
+			this._emitter.off('cancel', reject);
+
+			resolve(result);
+		});
+	}
+
+	/**
+	 * Instructs the current operation to cancel
+	 */
+	public cancel() {
+		this._emitter.emit('cancel');
 	}
 
 	/**
@@ -275,8 +292,9 @@ export class MDBCommunications extends EventEmitter {
 
 	/** Sends a command to the Microchip Debugger and returns the whole response
 	 * @param input The command to send to the debugger
+	 * @param level The ConnectionLevel required in order for the command to work
 	 */
-	async query(input: string, level: ConnectionLevel, until: string = '>', maxReadTime: number = 10000): Promise<string> {
+	async query(input: string, level: ConnectionLevel, until: string = '>'): Promise<string> {
 
 		if (this.connectionLevel >= level) {
 			return this._mdbMutex.runExclusive(() => {
@@ -285,16 +303,20 @@ export class MDBCommunications extends EventEmitter {
 					this.mdbProcess.stdout?.read();
 				}
 
-				let result: Promise<string> = this.readResult(until, maxReadTime);
+				let result: Promise<string> = this.readResult(until);
 				this._write(input, level);
 
 				return result;
 			});
 		} else {
-			return new Promise<string>((resolve) => {
+			return new Promise<string>((resolve, reject) => {
+				this._emitter.on('cancel', reject);
+
 				this.once(level.toString(), () => {
-					this.query(input, level, until, maxReadTime).then(v => resolve);
+					this.query(input, level, until).then(v => resolve);
 				});
+
+				this._emitter.off('cancel', reject);
 			});
 		}
 	}
@@ -372,14 +394,12 @@ export class MDBCommunications extends EventEmitter {
 			};
 		}
 
-		const programTimeOut : number = 60000;
-
 		// Connect to the tools
-		let message: string = await this.query(`HwTool ${toolSet}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet, '>', programTimeOut);
+		let message: string = await this.query(`HwTool ${toolSet}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet, '>');
 
 		// If message is just the default > output, keep reading. On different platforms, \r\n> may be the case, but we're looking for a longer string anyway.
 		if (message.length < 8) { 
-			message = await this.readResult('>', programTimeOut);
+			message = await this.readResult('>');
 		}
 
 		let result : ConnectionType = toolSet === "Sim" ? ConnectionType.simulator : ConnectionType.hardware;

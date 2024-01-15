@@ -62,8 +62,6 @@ export class MdbDebugSession extends LoggingDebugSession {
 
 	private _configurationDone = new Subject();
 
-	private _cancellationTokens = new Map<number, boolean>();
-
 	// private _reportProgress = false;
 	// private _progressId = 10000;
 	// private _cancelledProgressId: string | undefined = undefined;
@@ -711,7 +709,7 @@ export class MdbDebugSession extends LoggingDebugSession {
 
 	protected cancelRequest(response: DebugProtocol.CancelResponse, args: DebugProtocol.CancelArguments) {
 		if (args.requestId) {
-			this._cancellationTokens.set(args.requestId, true);
+			this._runtime.cancel();
 		}
 		// if (args.progressId) {
 		// 	this._cancelledProgressId = args.progressId;
