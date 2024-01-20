@@ -321,16 +321,24 @@
           },
           "configuration": {
             "type": "string",
-            "description": "The configuration of the project to build"
+            "description": "Deprecated - Replace by adding 'CONF=\"{configurationName}\"' to the 'args' list. The configuration of the project to build",
+            "deprecated": true
           },
           "debug": {
             "type": "boolean",
-            "description": "Boolean indicating debug build or production build"
+            "description": "Deprecated - Replace by adding 'TYPE_IMAGE=DEBUG_RUN' to the 'args' list. Boolean indicating debug build or production build",
+            "deprecated": true
           },
-          "makeArguments": {
+          "args": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "examples": [
+                "CONF=\"default\"",
+                "TYPE_IMAGE=DEBUG_RUN",
+                "-j4",
+                "-j16"
+              ]
             },
             "uniqueItems": true,
             "description": "A list of additional arguments to add to the make command"

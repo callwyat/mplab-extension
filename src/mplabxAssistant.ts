@@ -48,8 +48,8 @@ export class MPLABXAssistant {
 
 		let args: string[] = [];
 
-		if (definition.makeArguments) {
-			definition.makeArguments.forEach(arg => args.push(arg));
+		if (definition.args) {
+			definition.args.forEach(arg => args.push(arg));
 		}
 
 		if (definition.configuration) {
@@ -115,5 +115,5 @@ export interface MpMakeTaskDefinition extends vscode.TaskDefinition {
 	debug?: boolean;
 
 	/** Additional arguments to pass into the make command */
-	makeArguments?: string[];
+	args?: string[];
 }

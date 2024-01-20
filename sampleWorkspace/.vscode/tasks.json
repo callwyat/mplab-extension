@@ -8,9 +8,8 @@
             "type": "mplabx",
             "task": "build",
             "projectFolder": "${workspaceFolder}/TestProject.X",
-            "configuration": "PIC18F46J50",
-            "makeArguments": [
-                "-j4"
+            "args": [
+                "CONF=\"default\"",
             ],
             "problemMatcher": [
                 {

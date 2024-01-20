@@ -1,5 +1,11 @@
 # 0.1.23 (Pre-Release)
-* Added a `makeArguments` property to the mplabx build task definition. These arguments are inserted directly after the make command and before the final command of build or clean. Address [Issue #11](https://github.com/callwyat/mplab-extension/issues/11).
+* `mplabx` task definition changes
+    * Added `args` property.
+        * These arguments are inserted directly after the make command and before the final command of build or clean. Addresses [Issue #11](https://github.com/callwyat/mplab-extension/issues/11).
+    * Marked the `configuration` property as deprecated.
+        * Deprecated - Replaced by adding `CONF=\"{configurationName}\"` to the `args` list.
+    * Marked the `debug` property as deprecated.
+        * Deprecated - Replaced by adding `TYPE_IMAGE=DEBUG_RUN` to the `args` list.
 
 # 0.1.22
 * The full release of 0.1.22
