@@ -8,7 +8,7 @@
         * Deprecated - Replaced by adding `TYPE_IMAGE=DEBUG_RUN` to the `args` list.
 
 # 0.1.22
-* The full release of 0.1.22
+* The full release of 0.1.21
 * Thanks to [hdhlhs](https://github.com/hdhlhs) for figuring out the timeouts were the cause of [Issue #19](https://github.com/callwyat/mplab-extension/issues/19).
 
 # 0.1.21 (Pre-Release)
