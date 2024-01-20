@@ -1,3 +1,6 @@
+# 0.1.23 (Pre-Release)
+* Added a `makeArguments` property to the mplabx build task definition. These arguments are inserted directly after the make command and before the final command of build or clean. Address [Issue #11](https://github.com/callwyat/mplab-extension/issues/11).
+
 # 0.1.22
 * The full release of 0.1.22
 * Thanks to [hdhlhs](https://github.com/hdhlhs) for figuring out the timeouts were the cause of [Issue #19](https://github.com/callwyat/mplab-extension/issues/19).
