@@ -1,7 +1,7 @@
 {
   "name": "vslabx-extension",
   "displayName": "VSLABX (MPLABX Extension)",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "publisher": "ya-technologies",
   "description": "Build, Program, and Debug MPLABX Projects.",
   "author": {

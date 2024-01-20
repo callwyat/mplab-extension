@@ -1,5 +1,9 @@
+# 0.1.22
+* The full release of 0.1.22
+* Thanks to [hdhlhs](https://github.com/hdhlhs) for figuring out the timeouts were the cause of [Issue #19](https://github.com/callwyat/mplab-extension/issues/19).
+
 # 0.1.21 (Pre-Release)
-* Fixed issue were the debug console would show the written and read statements on the same line
+* Fixed issue were the debug console would show the written and read statements on the same line.
 * Addressed [Issue #19](https://github.com/callwyat/mplab-extension/issues/19) (Timeout is preventing programming from completing) by replacing timeouts with cancellation events.
 
 # 0.1.20

@@ -20,3 +20,5 @@ mock-debug.txt
 /src/archive/
 /src/tests/projects/debug-test.X/build/
 /src/tests/projects/debug-test.X/dist/
+
+temp
