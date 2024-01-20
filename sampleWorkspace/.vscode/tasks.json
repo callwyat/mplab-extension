@@ -9,6 +9,9 @@
             "task": "build",
             "projectFolder": "${workspaceFolder}/TestProject.X",
             "configuration": "PIC18F46J50",
+            "makeArguments": [
+                "-j4"
+            ],
             "problemMatcher": [
                 {
                     "base": "$xc",

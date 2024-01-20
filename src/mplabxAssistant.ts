@@ -43,15 +43,27 @@ export class MPLABXAssistant {
 		);
 	}
 
-	/** Returns a task that can build an MPLABX Project */
-	public getCleanTask(definition: MpMakeTaskDefinition,
-		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+	/** Creates the augments for the make command */
+	private createMakeArgs(definition: MpMakeTaskDefinition): string[] {
 
-		let args : Array<string> = [];
+		let args : string[] = [];
+
+		if (definition.makeArguments) {
+			definition.makeArguments.forEach(arg => args.push(arg));
+		}
 
 		if (definition.configuration) {
 			args.push(`CONF=\"${definition.configuration}\"`);
 		}
+
+		return args;
+	}
+
+	/** Returns a task that can build an MPLABX Project */
+	public getCleanTask(definition: MpMakeTaskDefinition,
+		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+
+		let args : string[]  = this.createMakeArgs(definition);
 
 		args.push("clean");
 
@@ -70,9 +82,7 @@ export class MPLABXAssistant {
 	public getBuildTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 
-		let args : Array<string> = [];
-
-		args.push(`CONF=\"${definition?.configuration ?? "default"}\"`);
+		let args : string[] = this.createMakeArgs(definition);
 		
 		if (definition?.debug ?? false){
 			args.push('TYPE_IMAGE=DEBUG_RUN');
@@ -91,8 +101,19 @@ export class MPLABXAssistant {
 	}
 }
 
+/**
+ * The arguments needed to run the MPLABX 'make' command
+ */
 export interface MpMakeTaskDefinition extends vscode.TaskDefinition {
+	/** The folder that contains the nbproject/configuration.xml */
 	projectFolder: string;
+
+	/** The name of the configuration to use. Available configurations are found in the configuration.xml file */
 	configuration?: string;
+
+	/** When true, the project will build for debugging. */
 	debug?: boolean;
+
+	/** Additional arguments to pass into the make command */
+	makeArguments?: string[];
 }

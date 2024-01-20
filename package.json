@@ -326,6 +326,14 @@
           "debug": {
             "type": "boolean",
             "description": "Boolean indicating debug build or production build"
+          },
+          "makeArguments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true,
+            "description": "A list of additional arguments to add to the make command"
           }
         }
       }
