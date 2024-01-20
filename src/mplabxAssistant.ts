@@ -27,7 +27,7 @@ export class MPLABXAssistant {
 	public getGenerateMakeFileConfigTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 
-		let args : Array<string> = [
+		let args: Array<string> = [
 			'-v',
 			definition.configuration ? (`.@\"{definition.configuration}\"`) : "."
 		];
@@ -37,7 +37,7 @@ export class MPLABXAssistant {
 			scope ?? vscode.TaskScope.Workspace,
 			'Generate',
 			'MPLABX Make',
-			new vscode.ProcessExecution(this.paths.mplabxMakefileGeneratorPath, args, { 
+			new vscode.ProcessExecution(this.paths.mplabxMakefileGeneratorPath, args, {
 				cwd: definition.projectFolder
 			})
 		);
@@ -46,7 +46,7 @@ export class MPLABXAssistant {
 	/** Creates the augments for the make command */
 	private createMakeArgs(definition: MpMakeTaskDefinition): string[] {
 
-		let args : string[] = [];
+		let args: string[] = [];
 
 		if (definition.makeArguments) {
 			definition.makeArguments.forEach(arg => args.push(arg));
@@ -63,7 +63,7 @@ export class MPLABXAssistant {
 	public getCleanTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 
-		let args : string[]  = this.createMakeArgs(definition);
+		let args: string[] = this.createMakeArgs(definition);
 
 		args.push("clean");
 
@@ -72,7 +72,7 @@ export class MPLABXAssistant {
 			scope ?? vscode.TaskScope.Workspace,
 			'Clean',
 			'MPLABX Make',
-			new vscode.ProcessExecution(this.paths.mplabxMakePath, args, { 
+			new vscode.ProcessExecution(this.paths.mplabxMakePath, args, {
 				cwd: definition.projectFolder
 			}),
 		);
@@ -82,9 +82,9 @@ export class MPLABXAssistant {
 	public getBuildTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 
-		let args : string[] = this.createMakeArgs(definition);
-		
-		if (definition?.debug ?? false){
+		let args: string[] = this.createMakeArgs(definition);
+
+		if (definition?.debug ?? false) {
 			args.push('TYPE_IMAGE=DEBUG_RUN');
 		}
 
@@ -93,7 +93,7 @@ export class MPLABXAssistant {
 			scope ?? vscode.TaskScope.Workspace,
 			'Build',
 			'MPLABX Make',
-			new vscode.ProcessExecution(this.paths.mplabxMakePath, args, { 
+			new vscode.ProcessExecution(this.paths.mplabxMakePath, args, {
 				cwd: definition.projectFolder
 			}),
 			'$xc'
