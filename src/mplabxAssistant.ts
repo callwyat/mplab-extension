@@ -108,10 +108,16 @@ export interface MpMakeTaskDefinition extends vscode.TaskDefinition {
 	/** The folder that contains the nbproject/configuration.xml */
 	projectFolder: string;
 
-	/** The name of the configuration to use. Available configurations are found in the configuration.xml file */
+	/** 
+	 * The name of the configuration to use. Available configurations are found in the configuration.xml file 
+	 * @deprecated Replaced by adding `CONF=\"{configurationName}\"` to the `args`.
+	 */
 	configuration?: string;
 
-	/** When true, the project will build for debugging. */
+	/** 
+	 * When true, the project will build for debugging. 
+	 * @deprecated Replaced by adding `TYPE_IMAGE=DEBUG_RUN` to the `args.
+	 */
 	debug?: boolean;
 
 	/** Additional arguments to pass into the make command */
