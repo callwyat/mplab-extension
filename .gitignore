@@ -5,6 +5,8 @@ npm-debug.log
 mock-debug.txt
 *.vsix
 
+package-lock.json
+
 # MacOS Directory folder
 .DS_Store
 
