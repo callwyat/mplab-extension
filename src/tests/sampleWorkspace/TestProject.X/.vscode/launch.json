@@ -5,12 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "mdb",
+            "request": "launch",
+            "name": "Microchip Debug Adapter",
+            "filePath": "${workspaceFolder}/dist/default/production/TestProject.X.production.elf",
+            "device": "PIC18F46J53",
+            "toolType": "pickit4",
+            "toolOptions": { },
+            "stopOnEntry": true,
+            "preLaunchTask": "MPLABX Build"
+        },
+        {
             "type": "mplabx",
             "request": "launch",
             "name": "MPLABX Debug",
-            "program": "${workspaceFolder}/",
+            "program": "${workspaceFolder}",
             "stopOnEntry": true,
-            "preLaunchTask": "MPLABX Build"
+            "preLaunchTask": "MPLABX Build",
+            "debug": false,
+            "configuration": "default"
         }
     ]
 }

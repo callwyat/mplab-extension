@@ -8,7 +8,7 @@
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--disable-extensions",
-				"${workspaceFolder}/sampleWorkspace"
+				"${workspaceFolder}/src/tests/sampleWorkspace/TestProject.X"
 			],
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"

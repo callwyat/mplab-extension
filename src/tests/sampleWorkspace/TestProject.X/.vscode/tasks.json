@@ -7,14 +7,16 @@
             "label": "MPLABX Build",
             "type": "mplabx",
             "task": "build",
-            "projectFolder": "${workspaceFolder}/",
-            "configuration": "default",
+            "projectFolder": "${workspaceFolder}",
+            "args": [
+                "CONF=\"default\"",
+            ],
             "problemMatcher": [
                 {
                     "base": "$xc",
                     "fileLocation": [
                         "relative",
-                        "${workspaceFolder}/"
+                        "${workspaceFolder}"
                     ],
                 }
             ],
