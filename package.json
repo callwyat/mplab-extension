@@ -27,19 +27,6 @@
   "bugs": {
     "url": "https://github.com/callwyat/mplab-extension/issues"
   },
-  "scripts": {
-    "compile": "tsc -p ./",
-    "lint": "eslint src --ext ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --tsconfig=./tsconfig.json --external:vscode --format=cjs --platform=node --outfile=dist/extension.js",
-    "watch": "npm run -S esbuild-base -- --sourcemap --sources-content=false --watch",
-    "build": "npm run -S esbuild-base -- --sourcemap --sources-content=false",
-    "package": "vsce package",
-    "publish": "vsce publish",
-    "publish-pre-release": "vsce publish --pre-release",
-    "vscode:prepublish": "rimraf dist && npm run -S esbuild-base -- --minify",
-    "test": "npm run typecheck"
-  },
   "main": "./dist/extension.js",
   "activationEvents": [
     "onDebugResolve:mplabx",
@@ -377,23 +364,34 @@
       }
     ]
   },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
   "devDependencies": {
-    "@types/mocha": "^9.1.1",
-    "@types/node": "^14.18.63",
-    "@types/vscode": "^1.83.0",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.86.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
     "@vscode/debugadapter-testsupport": "^1.63.0",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.9",
     "@vscode/vsce": "^2.23.0",
-    "esbuild": "^0.14.54",
-    "eslint": "^8.51.0",
-    "mocha": "^9.2.2",
-    "typescript": "^4.9.5"
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "@types/vscode": "^1.83.0",
     "@vscode/debugadapter": "^1.63.0",
+    "async-mutex": "^0.4.1",
+    "await-notify": "^1.0.1",
     "child_process": "^1.0.2",
+    "path-browserify": "^1.0.1",
     "pixl-xml": "^1.0.13",
     "platform-detect": "^3.0.1"
   }

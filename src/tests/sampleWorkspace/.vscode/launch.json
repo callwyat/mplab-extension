@@ -9,8 +9,8 @@
             "request": "launch",
             "name": "Microchip Debug Adapter",
             "filePath": "${workspaceFolder}/TestProject.X/dist/default/production/TestProject.X.production.elf",
-            "device": "PIC18F46J50",
-            "toolType": "Sim",
+            "device": "PIC18F46J53",
+            "toolType": "pickit4",
             "toolOptions": { },
             "stopOnEntry": true,
             "preLaunchTask": "MPLABX Build"

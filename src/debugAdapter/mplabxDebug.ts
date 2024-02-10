@@ -359,9 +359,6 @@ export class MdbDebugSession extends LoggingDebugSession {
 
 			this.sendResponse(response);
 		});
-
-
-
 	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
