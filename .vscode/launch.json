@@ -8,7 +8,7 @@
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--disable-extensions",
-				"${workspaceFolder}/src/tests/sampleWorkspace/TestProject.X"
+				"${workspaceFolder}/src/test/sampleWorkspace/TestProject.X"
 			],
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
@@ -30,28 +30,30 @@
 			"preLaunchTask": "npm: compile"
 		},
 		{
-			"name": "Tests",
-			"type": "node",
+			"name": "Extension Tests",
+			"type": "extensionHost",
 			"request": "launch",
-			"cwd": "${workspaceFolder}",
-			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"runtimeExecutable": "${execPath}",
 			"args": [
-				"-u", "tdd",
-				"--timeout", "999999",
-				"--colors",
-				"./out/tests/"
+				"--disable-extensions",
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionTestsPath=${workspaceFolder}/out/test/suite/index",
+				"${workspaceFolder}/src/test/sampleWorkspace/TestProject.X"
+
 			],
 			"outFiles": [
-				"${workspaceFolder}/out/**/*.js"
+				"${workspaceFolder}/out/test/**/*.js"
 			],
-			"internalConsoleOptions": "openOnSessionStart",
 			"preLaunchTask": "npm: compile"
 		}
 	],
 	"compounds": [
 		{
 			"name": "Extension + Server",
-			"configurations": [ "Extension", "Server" ]
+			"configurations": [
+				"Extension",
+				"Server"
+			]
 		}
 	]
 }
