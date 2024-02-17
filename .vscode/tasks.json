@@ -1,7 +1,7 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
+	"version": "2.0.0",
+	"tasks": [
+		{
 			"type": "npm",
 			"script": "watch",
 			"problemMatcher": "$tsc-watch",
@@ -14,17 +14,17 @@
 				"isDefault": true
 			}
 		},
-        {
-            "label": "Publish",
-            "type": "shell",
-            "command": "vsce",
-            "args": ["publish", "--no-yarn"]
-        },
-        {
-            "label": "Publish Pre Release",
-            "type": "shell",
-            "command": "vsce",
-            "args": ["publish", "--pre-release", "--no-yarn"]
-        }
-    ]
+		{
+			"label": "Publish",
+			"type": "shell",
+			"command": "vsce",
+			"args": ["publish", "--no-yarn"]
+		},
+		{
+			"label": "Publish Pre Release",
+			"type": "shell",
+			"command": "vsce",
+			"args": ["publish", "--pre-release", "--no-yarn"]
+		}
+	]
 }

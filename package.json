@@ -27,7 +27,7 @@
   "bugs": {
     "url": "https://github.com/callwyat/mplab-extension/issues"
   },
-  "main": "./dist/extension.js",
+  "main": "./out/extension.js",
   "activationEvents": [
     "onDebugResolve:mplabx",
     "onCommand:extension.vslabx.getMplabxInstallLocation",
@@ -375,7 +375,6 @@
   "devDependencies": {
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
-    "@types/vscode": "^1.86.0",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
     "@typescript-eslint/parser": "^6.19.1",
     "@vscode/debugadapter-testsupport": "^1.63.0",

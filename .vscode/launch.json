@@ -2,7 +2,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Extension",
+			"name": "Run Extension",
 			"type": "extensionHost",
 			"request": "launch",
 			"args": [
@@ -11,23 +11,9 @@
 				"${workspaceFolder}/src/test/sampleWorkspace/TestProject.X"
 			],
 			"outFiles": [
-				"${workspaceFolder}/dist/**/*.js"
-			],
-			"preLaunchTask": "npm: watch"
-		},
-		{
-			"name": "Server",
-			"type": "node",
-			"request": "launch",
-			"cwd": "${workspaceFolder}",
-			"program": "${workspaceFolder}/src/debugAdapter.ts",
-			"args": [
-				"--server=4711"
-			],
-			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "npm: compile"
+			"preLaunchTask": "${defaultBuildTask}"
 		},
 		{
 			"name": "Extension Tests",
@@ -45,15 +31,6 @@
 				"${workspaceFolder}/out/test/**/*.js"
 			],
 			"preLaunchTask": "npm: compile"
-		}
-	],
-	"compounds": [
-		{
-			"name": "Extension + Server",
-			"configurations": [
-				"Extension",
-				"Server"
-			]
 		}
 	]
 }

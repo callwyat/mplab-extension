@@ -2,7 +2,6 @@
 .vscode/**
 .vscode-test/**
 build/**
-out/**
 src/**
 temp/**
 .gitignore
