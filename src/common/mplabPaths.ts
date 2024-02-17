@@ -43,23 +43,19 @@ export class MPLABXPaths {
 				result = path.join(result, `v${version}`);
 			} else {
 				// find the latest installed version
-				try {
-					if (fs.existsSync(result)) {
-						const directories = fs.readdirSync(result, { withFileTypes: true })
-							.filter((item) => item.isDirectory())
-							.filter((item) => item.name.startsWith('v'))
-							.sort();
+				if (fs.existsSync(result)) {
+					const directories = fs.readdirSync(result, { withFileTypes: true })
+						.filter((item) => item.isDirectory())
+						.filter((item) => item.name.startsWith('v'))
+						.sort();
 
-						if (directories.length > 0) {
-							result = path.join(result, directories[directories.length - 1].name);
-						} else {
-							throw new Error(`lookup error: failed to find an MPLABX installation`);
-						}
+					if (directories.length > 0) {
+						result = path.join(result, directories[directories.length - 1].name);
 					} else {
 						throw new Error(`lookup error: failed to find an MPLABX installation`);
 					}
-				} catch (e) {
-					console.log(`An error occurred. ${e}`);
+				} else {
+					throw new Error(`lookup error: failed to find an MPLABX installation`);
 				}
 			}
 
@@ -67,14 +63,6 @@ export class MPLABXPaths {
 		}
 
 		return this._mplabxLocation;
-	}
-
-	/** Manually sets the the location of the MPLABX Installation, for those who don't use
-	 * the default location
-	*/
-	set mplabxFolder(location: string) {
-		this._mplabxLocation = location;
-		this._mplabxPlatformFolder = undefined;
 	}
 
 	private _mplabxPlatformFolder: string | undefined;
