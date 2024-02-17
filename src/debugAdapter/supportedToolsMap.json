@@ -1,5 +1,11 @@
 [
     {
+        "projectName": "PKOBSKDEPlatformTool",
+        "mdbName": "sk",
+        "description": "Starter Kits (PKOB)",
+        "validated": false
+    },
+    {
         "projectName": "PICkit3PlatformTool",
         "mdbName": "PICKit3",
         "description": "MPLAB® PICkit™ 3 In-Circuit Debugger",
