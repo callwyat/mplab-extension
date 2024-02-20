@@ -30,7 +30,6 @@
   "main": "./out/extension.js",
   "activationEvents": [
     "onDebugResolve:mplabx",
-    "onCommand:extension.vslabx.getMplabxInstallLocation",
     "workspaceContains:**/nbproject/**"
   ],
   "workspaceTrust": {
@@ -39,23 +38,23 @@
   "contributes": {
     "commands": [
       {
-        "command": "extension.vslabx.updateMakeFiles",
+        "command": "vslabx.updateMakeFiles",
         "title": "MPLABX: Update private make files"
       },
       {
-        "command": "extension.vslabx.clean",
+        "command": "vslabx.clean",
         "title": "MPLABX: Clean Project"
       },
       {
-        "command": "extension.vslabx.build",
+        "command": "vslabx.build",
         "title": "MPLABX: Build Project"
       },
       {
-        "command": "extension.vslabx.listSupportedTools",
+        "command": "vslabx.listSupportedTools",
         "title": "MDB: List Supported Tool Types"
       },
       {
-        "command": "extension.vslabx.listAttachedTools",
+        "command": "vslabx.listAttachedTools",
         "title": "MDB: List Attached Tools"
       }
     ],
@@ -172,7 +171,7 @@
           }
         ],
         "variables": {
-          "$mplabxInstallLocation": "extension.vslabx.getMplabxInstallLocation"
+          "$mplabxInstallLocation": "vslabx.getMplabxInstallLocation"
         }
       },
       {
@@ -257,7 +256,7 @@
           }
         ],
         "variables": {
-          "$mplabxInstallLocation": "extension.vslabx.getMplabxInstallLocation"
+          "$mplabxInstallLocation": "vslabx.getMplabxInstallLocation"
         }
       }
     ],

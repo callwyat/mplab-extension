@@ -16,6 +16,7 @@ import { MplabxConfigFile } from '../common/configFileHelper';
 import path = require('path');
 import fs = require('fs');
 import supportedTools = require('./supportedToolsMap.json');
+import { waitForTaskCompletion } from '../common/taskHelpers';
 
 
 export function activateMplabxDebug(context: vscode.ExtensionContext, debugType: string, factory: vscode.DebugAdapterDescriptorFactory) {
@@ -45,6 +46,9 @@ interface ILaunchProjectRequestArguments extends DebugProtocol.LaunchRequestArgu
 
 	/** Boolean indicating whether to build and launch a debug build or a production build */
 	debug?: boolean;
+
+	/** A task to run before running the debugger */
+	preLaunchTask?: string;
 }
 
 class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
@@ -53,7 +57,7 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 	 * Massage a debug configuration just before a debug session is being launched,
 	 * e.g. add all missing attributes to the debug configuration.
 	 */
-	resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+	async resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
 
 		switch (config.type) {
 			case 'mplabx': default: {
@@ -66,7 +70,7 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 					projectConfig.configuration = 'default';
 				}
 
-				let result = this.convertProjectArgs(projectConfig) as unknown as DebugConfiguration;
+				let result = await this.convertProjectArgs(projectConfig) as unknown as DebugConfiguration;
 				return result;
 			}
 			case 'mdb': {
@@ -77,7 +81,7 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 		return config;
 	}
 
-	private convertProjectArgs(args: ILaunchProjectRequestArguments): ILaunchRequestArguments | undefined{
+	private async convertProjectArgs(args: ILaunchProjectRequestArguments): Promise<ILaunchRequestArguments | undefined>{
 
 		try {
 			
@@ -99,6 +103,19 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 			let outputFolder = path.join(args.program, 'dist', args.configuration ? args.configuration : 'default', args.debug ? 'debug' : 'production');
 
 			const fileType: string = '.elf';
+
+			// The output folder might not exist yet because the preLaunchTask hasn't ran yet
+			if (args.preLaunchTask) {
+				const task = (await vscode.tasks.fetchTasks()).find((t => t.name === args.preLaunchTask));
+
+				if (task) {
+					const taskExecution = await vscode.tasks.executeTask(task);
+					await waitForTaskCompletion(taskExecution);
+
+					// Undefine the task so that it doesn't get ran again
+					args.preLaunchTask = undefined;
+				}
+			}
 
 			if (fs.existsSync(outputFolder)) {
 				let outputFiles = fs.readdirSync(outputFolder, { withFileTypes: true })

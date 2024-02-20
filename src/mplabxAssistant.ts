@@ -29,8 +29,12 @@ export class MPLABXAssistant {
 
 		let args: Array<string> = [
 			'-v',
-			definition.configuration ? (`.@\"{definition.configuration}\"`) : "."
+			definition.projectFolder
 		];
+
+		if (definition.configuration) {
+			args[1] += `@"${definition.configuration}"`;
+		}
 
 		return new vscode.Task(
 			definition,

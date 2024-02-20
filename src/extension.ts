@@ -23,6 +23,7 @@ import { activateMplabxDebug, workspaceFileAccessor } from './debugAdapter/activ
 import { MPLABXAssistant, MpMakeTaskDefinition } from './mplabxAssistant';
 import { MPLABXPaths } from './common/mplabPaths';
 import { MDBCommunications } from './debugAdapter/mdbCommunications';
+import { waitForTaskCompletion } from './common/taskHelpers';
 
 /*
  * The compile time flag 'runMode' controls how the debug adapter is run.
@@ -51,50 +52,56 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 
-		vscode.commands.registerCommand('extension.vslabx.getMplabxInstallLocation', config => {
+		vscode.commands.registerCommand('vslabx.getMplabxInstallLocation', config => {
 			return new MPLABXPaths().mplabxFolder;
 		}),
 
-		vscode.commands.registerCommand('extension.vslabx.updateMakeFiles', () => {
+		vscode.commands.registerCommand('vslabx.updateMakeFiles', async () => {
 
-			selectMplabxProjectFolder().then((projectPath) => {
-				if (projectPath) {
-					vscode.tasks.executeTask(mplabxAssistant.getGenerateMakeFileConfigTask({
-						projectFolder: projectPath,
-						type: 'generate'
-					}));
-				}
-			});
+			const projectPath = await selectMplabxProjectFolder();
+
+			if (projectPath) {
+				const task = await vscode.tasks.executeTask(mplabxAssistant.getGenerateMakeFileConfigTask({
+					projectFolder: projectPath,
+					type: 'generate'
+				}));
+
+
+				return await waitForTaskCompletion(task);
+			}
 		}),
 
-		vscode.commands.registerCommand('extension.vslabx.clean', () => {
+		vscode.commands.registerCommand('vslabx.clean', async () => {
 
-			selectMplabxProjectFolder().then((projectPath) => {
-				if (projectPath) {
-					vscode.tasks.executeTask(mplabxAssistant.getCleanTask({
-						projectFolder: projectPath,
-						type: 'clean'
-					}));
-				}
-			});
+			const projectPath = await selectMplabxProjectFolder();
+
+			if (projectPath) {
+				const task = await vscode.tasks.executeTask(mplabxAssistant.getCleanTask({
+					projectFolder: projectPath,
+					type: 'clean'
+				}));
+
+				return await waitForTaskCompletion(task);
+			}
 		}),
 
-		vscode.commands.registerCommand('extension.vslabx.build', () => {
+		vscode.commands.registerCommand('vslabx.build', async () => {
 
-			selectMplabxProjectFolder().then((projectPath) => {
-				if (projectPath) {
-					vscode.tasks.executeTask(mplabxAssistant.getBuildTask({
-						projectFolder: projectPath,
-						type: 'build'
-					}));
-				}
-			});
+			const projectPath = await selectMplabxProjectFolder();
+			if (projectPath) {
+				const task = await vscode.tasks.executeTask(mplabxAssistant.getBuildTask({
+					projectFolder: projectPath,
+					type: 'build'
+				}));
+
+				return await waitForTaskCompletion(task);
+			}
 		}),
 
-		vscode.commands.registerCommand('extension.vslabx.listSupportedTools', title => {
+		vscode.commands.registerCommand('vslabx.listSupportedTools', async title => {
 
 			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
-			return vscode.window.showQuickPick(
+			return await vscode.window.showQuickPick(
 				mdb.getSupportedProgramers().then((supportedProgramers) => {
 
 					return supportedProgramers.map(item => {
@@ -108,7 +115,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}), { title: title ?? 'MDB: Supported Tool Types' });
 		}),
 
-		vscode.commands.registerCommand('extension.vslabx.listAttachedTools', title => {
+		vscode.commands.registerCommand('vslabx.listAttachedTools', title => {
 
 			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
 			return vscode.window.showQuickPick(
@@ -144,7 +151,6 @@ export function activate(context: vscode.ExtensionContext) {
 						return mplabxAssistant.getCleanTask(definition, _task.scope);
 					}
 				}
-				return undefined;
 			}
 		}),
 	);

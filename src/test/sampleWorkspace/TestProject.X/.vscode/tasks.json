@@ -4,6 +4,24 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "MPLABX Clean",
+            "type": "mplabx",
+            "task": "clean",
+            "projectFolder": "${workspaceFolder}",
+            "args": [
+                "CONF=\"default\"",
+            ],
+            "problemMatcher": [
+                {
+                    "base": "$xc",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                }
+            ]
+        },
+        {
             "label": "MPLABX Build",
             "type": "mplabx",
             "task": "build",
