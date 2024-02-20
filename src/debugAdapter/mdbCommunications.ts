@@ -153,7 +153,7 @@ export class MDBCommunications extends EventEmitter {
 
 		// (Windows Compatibility) Trim off quotes if there are any
 		mdbPath = mdbPath.replace(/"/g, "",);
-		
+
 		this._mdbProcess = spawn(mdbPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 		this.logLine(`--- Started Microchip Debugger ---`, LogLevel.info);
 
@@ -235,7 +235,7 @@ export class MDBCommunications extends EventEmitter {
 			do {
 				result += await this.readLine();
 			} while (!result.includes(until));
-	
+
 			this._emitter.off('cancel', reject);
 
 			resolve(result);
@@ -270,7 +270,7 @@ export class MDBCommunications extends EventEmitter {
 
 		// Stop at message may or may not come in a single data or over multiple. 
 		// If we don't match the pattern, we need to keep reading and re-parse when a full message has been received.
-		if ((matches?.length || 0) < 1) { 
+		if ((matches?.length || 0) < 1) {
 			const remainingResult = await this.readResult();
 			message += remainingResult;
 		}
@@ -336,7 +336,12 @@ export class MDBCommunications extends EventEmitter {
 			lines.pop();
 
 			if (lines.length === 0) {
-				return [] as IProgramerInformation[];
+				return [{
+					index: -1,
+					name: 'No Programers Found',
+					type: '',
+					serialNumber: 'None'
+				}];
 			}
 			
 			return lines.map((line => {
@@ -349,7 +354,7 @@ export class MDBCommunications extends EventEmitter {
 						return { index: 0, name: match[0] ?? 'Unknown', type: '', serialNumber: '' };
 					}
 				} else {
-					return { index: 0, name: 'Unknown', type: '', serialNumber: '' } ;
+					return { index: 0, name: 'Unknown', type: '', serialNumber: '' };
 				}
 			}));
 		});
@@ -381,10 +386,10 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
-	public async connect(targetDevice: string, toolSet: string, programMode: boolean, toolSetOptions: object = {} ): Promise<ConnectionType> {
+	public async connect(targetDevice: string, toolSet: string, programMode: boolean, toolSetOptions: object = {}): Promise<ConnectionType> {
 
 		this.write(`Device ${targetDevice}`, ConnectionLevel.none);
-		
+
 		this.connectionLevel = ConnectionLevel.deviceSet;
 
 		// Apply all the tool settings
@@ -398,11 +403,11 @@ export class MDBCommunications extends EventEmitter {
 		let message: string = await this.query(`HwTool ${toolSet}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet, '>');
 
 		// If message is just the default > output, keep reading. On different platforms, \r\n> may be the case, but we're looking for a longer string anyway.
-		if (message.length < 8) { 
+		if (message.length < 8) {
 			message = await this.readResult('>');
 		}
 
-		let result : ConnectionType = toolSet === "Sim" ? ConnectionType.simulator : ConnectionType.hardware;
+		let result: ConnectionType = toolSet === "Sim" ? ConnectionType.simulator : ConnectionType.hardware;
 
 		if (result === ConnectionType.hardware && !message.match(/Target device (.+) found\./)) {
 			throw new Error(`Failed to connect to target device ${message.replace(/^\>+|\>+$/g, '').trim()}`);
@@ -414,7 +419,7 @@ export class MDBCommunications extends EventEmitter {
 	}
 
 	public async startDebugger(targetDevice: string, toolSet: string, elfFile: string, toolSetOptions: object = {}, stopOnEntry = false) {
-		
+
 		if (!fs.existsSync(elfFile)) {
 			throw new Error(`Failure to find the given file: ${elfFile}`);
 		}
@@ -423,12 +428,12 @@ export class MDBCommunications extends EventEmitter {
 			// Program the chip
 			const programResult = await this.query(`Program "${elfFile}"`, ConnectionLevel.connected);
 			if (programResult.match(/Program succeeded\./) || programResult.match(/Programming\/Verify complete/)) {
-				
+
 				this.connectionLevel = ConnectionLevel.programed;
-				
+
 				// Let everyone know initialization has completed.
 				this.emit('initCompleted');
-				
+
 			} else {
 				throw new Error('Failure to write program to device');
 			}
