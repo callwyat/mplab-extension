@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.1.25 (Pre-Release)
+* Attempted to add support for the `PKOBSKDEPlatformTool` tool (see [Issue #21](https://github.com/callwyat/mplab-extension/issues/21))
+* None user facing:
+    * Implemented automated testing of the extension
+    * Updated node packages
+    * Removed the word "Extension" from the start of every command key
+
 ### 0.1.24
 * Full Release version of 0.1.23
 
