@@ -57,7 +57,7 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 	 * Massage a debug configuration just before a debug session is being launched,
 	 * e.g. add all missing attributes to the debug configuration.
 	 */
-	async resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+	resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
 
 		switch (config.type) {
 			case 'mplabx': default: {
@@ -70,7 +70,7 @@ class MPLABXConfigurationProvider implements vscode.DebugConfigurationProvider {
 					projectConfig.configuration = 'default';
 				}
 
-				let result = await this.convertProjectArgs(projectConfig) as unknown as DebugConfiguration;
+				let result = this.convertProjectArgs(projectConfig) as unknown as Promise<DebugConfiguration>;
 				return result;
 			}
 			case 'mdb': {
