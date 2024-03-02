@@ -1,4 +1,6 @@
 # Changelog
+### 0.1.26
+* Full Release version of 0.1.25
 
 ### 0.1.25 (Pre-Release)
 * Attempted to add support for the `PKOBSKDEPlatformTool` tool (see [Issue #21](https://github.com/callwyat/mplab-extension/issues/21))
