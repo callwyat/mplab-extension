@@ -77,7 +77,7 @@ export class MdbDebugSession extends LoggingDebugSession {
 	 * Creates a new debug adapter that is used for one debug session.
 	 * We configure the default implementation of a debug adapter here.
 	 */
-	public constructor(fileAccessor: FileAccessor) {
+	public constructor() {
 		super("mplab-debug.txt");
 
 		// this debugger uses zero-based lines and columns

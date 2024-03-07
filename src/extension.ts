@@ -19,7 +19,7 @@ import * as Net from 'net';
 import * as vscode from 'vscode';
 import { ProviderResult } from 'vscode';
 import { MdbDebugSession } from './debugAdapter/mplabxDebug';
-import { activateMplabxDebug, workspaceFileAccessor } from './debugAdapter/activateMplabxDebug';
+import { activateMplabxDebug } from './debugAdapter/activateMplabxDebug';
 import { MPLABXAssistant, MpMakeTaskDefinition } from './mplabxAssistant';
 import { MPLABXPaths } from './common/mplabPaths';
 import { MDBCommunications } from './debugAdapter/mdbCommunications';
@@ -183,7 +183,7 @@ class MdbDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDescr
 		if (!this.server) {
 			// start listening on a random port
 			this.server = Net.createServer(socket => {
-				const session = new MdbDebugSession(workspaceFileAccessor);
+				const session = new MdbDebugSession();
 				session.setRunAsServer(true);
 				session.start(socket as NodeJS.ReadableStream, socket);
 			}).listen(0);
@@ -203,7 +203,7 @@ class MdbDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDescr
 class MdbInlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
 
 	createDebugAdapterDescriptor(_session: vscode.DebugSession): ProviderResult<vscode.DebugAdapterDescriptor> {
-		return new vscode.DebugAdapterInlineImplementation(new MdbDebugSession(workspaceFileAccessor));
+		return new vscode.DebugAdapterInlineImplementation(new MdbDebugSession());
 	}
 }
 
