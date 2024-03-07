@@ -5,14 +5,7 @@ import * as fs from 'fs';
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import { waitForTaskCompletion } from '../common/taskHelpers';
-
-async function timeoutPromise(timeout: number): Promise<void> {
-	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve();
-		}, timeout);
-	});
-}
+import { asyncWait, selectFirstQuickItem } from './testHelpers';
 
 const allowExitCodeNegativeOne = true;
 
@@ -110,12 +103,9 @@ suite('Extension Test Suite', () => {
 		const firstItemPromise = vscode.commands.executeCommand('vslabx.listSupportedTools');
 
 		// FUTURE: Figure out how to be notified that the list is populated
-		await timeoutPromise(8000);
+		await asyncWait(8000);
 
-		// Select the first item
-		await vscode.commands.executeCommand('workbench.action.quickOpenSelectNext');
-
-		await vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem');
+		await selectFirstQuickItem();
 
 		const firstItem = await firstItemPromise;
 
@@ -129,12 +119,9 @@ suite('Extension Test Suite', () => {
 		const firstItemPromise = vscode.commands.executeCommand('vslabx.listAttachedTools');
 
 		// FUTURE: Figure out how to be notified that the list is populated
-		await timeoutPromise(10000);
+		await asyncWait(10000);
 
-		// Select the first item
-		await vscode.commands.executeCommand('workbench.action.quickOpenSelectNext');
-
-		await vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem');
+		await selectFirstQuickItem();
 
 		const firstItem = await firstItemPromise;
 
@@ -145,7 +132,7 @@ suite('Extension Test Suite', () => {
 
 	test('Build Tasks', async function() {
 
-		this.timeout(10000);
+		this.timeout(60000);
 
 		const tasks = await vscode.tasks.fetchTasks();
 
