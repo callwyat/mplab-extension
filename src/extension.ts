@@ -39,14 +39,12 @@ export function activate(context: vscode.ExtensionContext) {
 	switch (runMode) {
 		case 'server': default:
 			// run the debug adapter as a server inside the extension and communicate via a socket
-			activateMplabxDebug(context, 'mplabx', new MdbDebugAdapterServerDescriptorFactory());
-			activateMplabxDebug(context, 'mdb', new MdbDebugAdapterServerDescriptorFactory());
+			activateMplabxDebug(context, new MdbDebugAdapterServerDescriptorFactory());
 			break;
 
 		case 'inline':
 			// run the debug adapter inside the extension and directly talk to it
-			activateMplabxDebug(context, 'mplabx', new MdbInlineDebugAdapterFactory());
-			activateMplabxDebug(context, 'mdb', new MdbInlineDebugAdapterFactory());
+			activateMplabxDebug(context, new MdbInlineDebugAdapterFactory());
 			break;
 	}
 

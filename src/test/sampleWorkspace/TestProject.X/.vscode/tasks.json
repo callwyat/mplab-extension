@@ -42,6 +42,25 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "MPLABX Build Debug",
+            "type": "mplabx",
+            "task": "build",
+            "projectFolder": "${workspaceFolder}",
+            "args": [
+                "CONF=\"default\"",
+                "TYPE_IMAGE=DEBUG_RUN"
+            ],
+            "problemMatcher": [
+                {
+                    "base": "$xc",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                }
+            ]
         }
     ]
 }
