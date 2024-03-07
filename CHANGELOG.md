@@ -1,4 +1,8 @@
 # Changelog
+### 0.1.28
+* Addressed [Issue #22](https://github.com/callwyat/mplab-extension/issues/22).
+    * Launching a debug session without a `launch.json` fails.
+
 ### 0.1.26
 * Full Release version of 0.1.25
 
