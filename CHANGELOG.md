@@ -1,4 +1,9 @@
 # Changelog
+### 0.1.29
+* Addressed [Issue #25](https://github.com/callwyat/mplab-extension/issues/25).
+    * When building a debug profile from a configuration.xml, the first configuration
+      will be used if there is only one configuration.
+
 ### 0.1.28
 * Addressed [Issue #22](https://github.com/callwyat/mplab-extension/issues/22).
     * Launching a debug session without a `launch.json` fails.
