@@ -4,9 +4,13 @@ import { readFile } from "fs/promises";
 
 export class MplabxConfigFile {
 
+    public static getConfigFilePath(projectPath: string): string {
+        return path.join(projectPath, 'nbproject', 'configurations.xml');
+    }
+
     public static async read(projectPath: string): Promise<any> {
 
-        let configPath: string = path.join(projectPath, 'nbproject', 'configurations.xml');
+        let configPath: string = MplabxConfigFile.getConfigFilePath(projectPath);
 
         return readFile(configPath).then((data) => {
             var xml = require('pixl-xml');
@@ -17,7 +21,7 @@ export class MplabxConfigFile {
 
     public static readSync(projectPath: string): any {
 
-        let configPath: string = path.join(projectPath, 'nbproject', 'configurations.xml');
+        let configPath: string = MplabxConfigFile.getConfigFilePath(projectPath);
 
         var xml = require('pixl-xml');
 

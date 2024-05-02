@@ -163,19 +163,31 @@ export class MplabxConfigurationProvider implements vscode.DebugConfigurationPro
 
 async function convertDebugConfiguration(args: MplabxDebugConfiguration): Promise<MdbDebugConfiguration> {
 
-	if (!args.configuration) {
-		args.configuration = 'default';
-	}
-
 	let project = MplabxConfigFile.readSync(args.program);
 	let confs = project.confs.conf;
+	let conf: any;
 
 	// If there is only one configuration, confs is already what we need, otherwise search for a configuration
-	let conf = confs.name ? confs : confs.find(c => c.name === args.configuration);
+	if (confs.name) {
+		conf = confs;
+	} else if (confs.length === 0) {
+		throw Error(`Failure to find any configurations in "${MplabxConfigFile.getConfigFilePath(args.program)}"`);
+	} else if (confs.length === 1) {
+		conf = confs[0];
+	} else {
 
-	if (!conf) {
-		throw Error(`Failure to find a "${args.configuration}" configuration in ${project}`);
+		if (!args.configuration) {
+			args.configuration = 'default';
+		}
+
+		conf = confs.find(c => c.name === args.configuration);
+
+		if (!conf) {
+			throw Error(`Failure to find a "${args.configuration}" configuration in "${MplabxConfigFile.getConfigFilePath(args.program)}". Please specify a "configuration" in the launch.json.`);
+		}
 	}
+
+	args.configuration = conf.name as string;
 
 	// Get the tool
 	let tool = conf.toolsSet.platformTool;
