@@ -126,9 +126,10 @@ export class MplabxConfigurationProvider implements vscode.DebugConfigurationPro
 	 */
 	resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
 
+		// If no configuration is provided, build a contextless config 
 		if (config.type !== 'mplabx') {
-			config.type = 'mplabx',
-				config.name = "MPLABX Debug";
+			config.type = 'mplabx';
+			config.name = "MPLABX Debug";
 			config.request = "launch";
 		}
 
