@@ -1,5 +1,8 @@
 # Changelog
-### 0.1.29
+### 0.1.30
+* Full release of version 0.1.29
+
+### 0.1.29 (Pre-Release)
 * Addressed [Issue #25](https://github.com/callwyat/mplab-extension/issues/25).
     * When building a debug profile from a configuration.xml, the first configuration
       will be used if there is only one configuration.
