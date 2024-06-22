@@ -8,6 +8,9 @@ import path = require('path');
 import fs = require('fs');
 import * as vscode from 'vscode';
 
+const defaultString = 'default';
+const latestString = 'latest';
+
 /** A class to help find paths related to MPLABX */
 export class MPLABXPaths {
 
@@ -21,7 +24,7 @@ export class MPLABXPaths {
 
 			let config = vscode.workspace.getConfiguration('vslabx').get<string>('mplabxFolderLocation');
 
-			if (config && config !== 'default') {
+			if (config && config !== defaultString) {
 				result = config;
 			}
 			else if (macos) {
@@ -39,7 +42,7 @@ export class MPLABXPaths {
 
 			let version = vscode.workspace.getConfiguration('vslabx').get<string>('mplabxVersion');
 
-			if (version && version !== "latest") {
+			if (version && version !== latestString) {
 				result = path.join(result, `v${version}`);
 			} else {
 				// find the latest installed version
@@ -89,6 +92,12 @@ export class MPLABXPaths {
 	/** Gets the absolute path to the Microchip Debugger */
 	get mplabxDebuggerPath(): string {
 
+		let config = vscode.workspace.getConfiguration('vslabx').get<string>('mplabxDebuggerPath');
+
+		if (config && config !== defaultString) {
+			return config;
+		}
+
 		if (macos || linux) {
 			return path.join(this.mplabxPlatformFolder, 'bin', 'mdb.sh');
 		} else if (windows) {
@@ -101,6 +110,12 @@ export class MPLABXPaths {
 	/** Gets the absolute path to the Microchip Maker */
 	get mplabxMakePath(): string {
 
+		let config = vscode.workspace.getConfiguration('vslabx').get<string>('mplabxMakePath');
+
+		if (config && config !== defaultString) {
+			return config;
+		}
+
 		if (macos || linux) {
 			return path.join(this.mplabxPlatformFolder, 'bin', 'make');
 		} else if (windows) {
@@ -112,6 +127,13 @@ export class MPLABXPaths {
 
 	/** Gets the path to the script for building all the auto-generated Makefile stuff */
 	get mplabxMakefileGeneratorPath(): string {
+
+		let config = vscode.workspace.getConfiguration('vslabx').get<string>('mplabxMakefileGeneratorPath');
+
+		if (config && config !== defaultString) {
+			return config;
+		}
+
 		if (macos || linux) {
 			return path.join(this.mplabxPlatformFolder, 'bin', 'prjMakefilesGenerator.sh');
 		} else if (windows) {
@@ -123,6 +145,12 @@ export class MPLABXPaths {
 
 	/** Gets the absolute path to the Microchip IPECMD */
 	get mplabxIpecmdPath(): string {
+
+		let config = vscode.workspace.getConfiguration('vslabx').get<string>('mplabxIpecmdPath');
+
+		if (config && config !== defaultString) {
+			return config;
+		}
 
 		const ipePath: string = path.join(this.mplabxFolder, 'mplab_ipe');
 		if (macos) {

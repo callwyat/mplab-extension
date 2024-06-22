@@ -7,6 +7,23 @@ import * as fs from 'fs';
 import path = require('path');
 import { MPLABXPaths } from '../../common/mplabPaths';
 
+/** Tests that when a path override will return the overridden path */
+async function overridePathTest(configName: string) {
+
+	const mplabPaths = new MPLABXPaths();
+
+	const config = vscode.workspace.getConfiguration('vslabx');
+	const testPath = 'TestTESTTest';
+
+	try {
+		await config.update(configName, testPath, true);
+
+		assert.strictEqual(mplabPaths[configName], testPath);
+	} finally {
+		await config.update(configName, await config.inspect(configName)?.defaultValue, true);
+	}
+}
+
 suite('MPLABX Paths Test Suite', () => {
 
 	suiteTeardown(() => {
@@ -33,7 +50,7 @@ suite('MPLABX Paths Test Suite', () => {
 		assert.strictEqual(fs.existsSync(mplabPaths.mplabxMakefileGeneratorPath), true);
 	});
 
-	test('path override tests', async () => {
+	test('path general override tests', async () => {
 
 		const mplabPaths = new MPLABXPaths();
 
@@ -53,5 +70,25 @@ suite('MPLABX Paths Test Suite', () => {
 			await config.update(basePathName, await config.inspect(basePathName)?.defaultValue, true);
 			await config.update(versionName, await config.inspect(versionName)?.defaultValue, true);
 		}
+	});
+
+	test('mplabxDebuggerPath override test', async () => {
+
+		await overridePathTest('mplabxDebuggerPath');
+	});
+
+	test('mplabxMakePath override test', async () => {
+
+		await overridePathTest('mplabxMakePath');
+	});
+
+	test('mplabxMakefileGeneratorPath override test', async () => {
+
+		await overridePathTest('mplabxMakefileGeneratorPath');
+	});
+
+	test('mplabxIpecmdPath override test', async () => {
+
+		await overridePathTest('mplabxIpecmdPath');
 	});
 });

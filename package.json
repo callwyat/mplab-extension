@@ -95,6 +95,30 @@
             "default": [],
             "description": "A list of regular expressions for programer settings to use from the MPLABX Project file (e.g. 'poweroptions.powerenable', 'voltagevalue'). Use '.*' to send all",
             "scope": "machine-overridable"
+          },
+          "vslabx.mplabxDebuggerPath": {
+            "type": "string",
+            "default": "default",
+            "description": "Specifies the absolute path to use when invoking Microchip's 'mdb' command (the microchip debugger).",
+            "scope": "machine-overridable"
+          },
+          "vslabx.mplabxMakePath": {
+            "type": "string",
+            "default": "default",
+            "description": "Specifies the absolute path to use when invoking Microchip's 'make' command.",
+            "scope": "machine-overridable"
+          },
+          "vslabx.mplabxMakefileGeneratorPath": {
+            "type": "string",
+            "default": "default",
+            "description": "Specifies the absolute path to use when invoking Microchip's 'prjMakefilesGenerator' command.",
+            "scope": "machine-overridable"
+          },
+          "vslabx.mplabxIpecmdPath": {
+            "type": "string",
+            "default": "default",
+            "description": "Specifies the absolute path to use when invoking Microchip's 'ipecmd' command. ",
+            "scope": "machine-overridable"
           }
         }
       }
