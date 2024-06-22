@@ -1,4 +1,9 @@
 # Changelog
+### 0.1.32
+* Addressed [Issue #26](https://github.com/callwyat/mplab-extension/issues/26).
+    * All paths to Microchip command (e.g. mdb, make, ipe_cmd) can now be overridden
+      to what ever the user want to use.
+
 ### 0.1.30
 * Full release of version 0.1.29
 
