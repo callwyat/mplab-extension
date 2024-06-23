@@ -14,6 +14,7 @@ import path = require('path');
 import fs = require('fs');
 import supportedTools = require('./supportedToolsMap.json');
 import { waitForTaskCompletion } from '../common/taskHelpers';
+import { resolvePath } from '../common/vscodeHelpers';
 
 
 export function activateMplabxDebug(context: vscode.ExtensionContext, factory: vscode.DebugAdapterDescriptorFactory) {
@@ -139,24 +140,7 @@ export class MplabxConfigurationProvider implements vscode.DebugConfigurationPro
 			projectConfig.program = '${workspaceFolder}';
 		}
 
-		if (projectConfig.program.match(/\$\{workspaceFolder\}/)) {
-
-			let workspaceFolder: string | undefined;
-
-			if (folder) {
-				workspaceFolder = folder.uri.fsPath;
-			} else if (vscode.window.activeTextEditor?.document.uri) {
-				workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor.document.uri)?.uri.fsPath;
-			} else if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-				workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath;
-			} else {
-				throw new Error('Failed to resolve "${workspaceFolder}" in time to find an MPLABX project folder');
-			}
-
-			if (workspaceFolder) {
-				projectConfig.program = projectConfig.program.replace('${workspaceFolder}', workspaceFolder);
-			}
-		}
+		projectConfig.program = resolvePath(projectConfig.program, folder);
 
 		return convertDebugConfiguration(projectConfig);
 	}
