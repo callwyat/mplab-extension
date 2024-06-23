@@ -164,38 +164,10 @@ export class MplabxConfigurationProvider implements vscode.DebugConfigurationPro
 
 async function convertDebugConfiguration(args: MplabxDebugConfiguration): Promise<MdbDebugConfiguration> {
 
-	let project = MplabxConfigFile.readSync(args.program);
-	let confs = project.confs.conf;
-	let conf: any;
-
-	// If there is only one configuration, confs is already what we need, otherwise search for a configuration
-	if (confs.name) {
-		conf = confs;
-	} else if (confs.length === 0) {
-		throw Error(`Failure to find any configurations in "${MplabxConfigFile.getConfigFilePath(args.program)}"`);
-	} else if (confs.length === 1) {
-		conf = confs[0];
-	} else {
-
-		if (!args.configuration) {
-			args.configuration = 'default';
-		}
-
-		conf = confs.find(c => c.name === args.configuration);
-
-		if (!conf) {
-			throw Error(`Failure to find a "${args.configuration}" configuration in "${MplabxConfigFile.getConfigFilePath(args.program)}". Please specify a "configuration" in the launch.json.`);
-		}
-	}
-
-	args.configuration = conf.name as string;
-
-	// Get the tool
-	let tool = conf.toolsSet.platformTool;
-	const device: string = conf.toolsSet.targetDevice;
+	const targetConfig = MplabxConfigFile.getTargetInterface(MplabxConfigFile.readSync(args.program), args.configuration);
 
 	// Find the elf
-	let outputFolder = path.join(args.program, 'dist', args.configuration, args.debug ? 'debug' : 'production');
+	let outputFolder = path.join(args.program, 'dist', targetConfig.configurationName, args.debug ? 'debug' : 'production');
 
 	const fileType: string = '.elf';
 
@@ -227,14 +199,13 @@ async function convertDebugConfiguration(args: MplabxDebugConfiguration): Promis
 			let toolOptions: any = {};
 
 			// Collect all the tool settings
-			if (conf[tool] && programerAllowRegExp) {
+			if (targetConfig.toolOptions && programerAllowRegExp) {
 				const allowRegex: RegExp = programerAllowRegExp;
 
-				conf[tool].property.forEach((pair) => {
-					const key: string = pair.key;
+				for (const key in targetConfig.toolOptions) {
 					// Keys with a capital value don't work
 					if (key.toLowerCase() === key) {
-						const value: string = pair.value;
+						const value: string = targetConfig.toolOptions[key];
 
 						// Values with '{' in it, needs resolved... idk how to do
 						if (value.length > 0 && !value.match(/(\$\{.+\}|Press\sto|system settings|\.\D)/) &&
@@ -243,20 +214,20 @@ async function convertDebugConfiguration(args: MplabxDebugConfiguration): Promis
 							toolOptions[key] = value;
 						}
 					}
-				});
+				};
 			}
 
 			// Convert from a project name to an MDB name. If a name can't be found,
 			// try using the project name directly. It probably won't work.
 			const mdbTool = supportedTools.find((item) => {
-				return item.projectName === tool;
-			})?.mdbName ?? tool;
+				return item.projectName === targetConfig.tool;
+			})?.mdbName ?? targetConfig.tool;
 
 			return {
 				name: args.name,
 				type: 'mdb',
 				request: args.request,
-				device: device,
+				device: targetConfig.device,
 				toolType: mdbTool,
 				filePath: path.join(outputFolder, outputFile),
 				toolOptions: toolOptions,
