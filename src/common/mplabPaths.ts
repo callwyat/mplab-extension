@@ -152,7 +152,7 @@ export class MPLABXPaths {
 			return config;
 		}
 
-		const ipePath: string = path.join(this.mplabxFolder, 'mplab_ipe');
+		const ipePath: string = path.join(this.mplabxPlatformFolder, 'mplab_ipe');
 		if (macos) {
 			return path.join(ipePath, 'bin', 'ipecmd.sh');
 		} else if (linux) {
