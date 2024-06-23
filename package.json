@@ -232,7 +232,7 @@
                 "default": "${workspaceFolder}/dist/default/debug/${1:projectName}.debug.elf"
               },
               "toolOptions": {
-                "type": "",
+                "type": "object",
                 "description": "A dictionary of tool options to set. See the MPLABX configuration file for what is available",
                 "default": {}
               },
@@ -297,7 +297,8 @@
             "description": "The task that needs preformed",
             "enum": [
               "build",
-              "clean"
+              "clean",
+              "program"
             ]
           },
           "projectFolder": {

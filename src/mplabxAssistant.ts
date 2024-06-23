@@ -5,6 +5,11 @@
 'use strict';
 import * as vscode from 'vscode';
 import { MPLABXPaths } from './common/mplabPaths';
+import { MplabxConfigFile } from './common/configFileHelper';
+import { resolvePath } from './common/vscodeHelpers';
+
+import supportedTools = require('./debugAdapter/supportedToolsMap.json');
+import path = require('path');
 
 /** A helper class for finding all the MPLABX things */
 export class MPLABXAssistant {
@@ -53,7 +58,7 @@ export class MPLABXAssistant {
 		let args: string[] = [];
 
 		if (definition.args) {
-			definition.args.forEach(arg => args.push(arg));
+			args.push(...definition.args);
 		}
 
 		if (definition.configuration) {
@@ -99,6 +104,92 @@ export class MPLABXAssistant {
 			'MPLABX Make',
 			new vscode.ProcessExecution(this.paths.mplabxMakePath, args, {
 				cwd: definition.projectFolder
+			}),
+			'$xc'
+		);
+	}
+
+	/** Returns a task that can build an MPLABX Project */
+	public getProgramTask(definition: MpMakeTaskDefinition,
+		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+
+		let args: string[] = [];
+
+		if (definition.args) {
+			args.push(...definition.args);
+		}
+
+		let configName: string = 'default';
+
+		if (definition?.configuration) {
+			configName = definition.configuration;
+		} else {
+			const arg = definition.args?.find(arg => {
+				const argMatch = arg.match(/CONF=\"?(?<configName>[^\"]*)\"?/);
+				if (argMatch?.groups) {
+					configName = argMatch.groups.configName;
+					return true;
+				}
+			});
+
+			// Remove the element from the the array
+			if (arg) {
+				args.splice(args.indexOf(arg), 1);
+			}
+		}
+
+		let debug: boolean = false;
+
+		if (definition.debug) {
+			debug = true;
+		} else {
+			const arg = definition.args?.find(arg => arg.match(/TYPE_IMAGE=DEBUG_RUN/));
+
+			if (arg) {
+				debug = true;
+				args.splice(args.indexOf(arg), 1);
+			}
+		}
+
+		const typeString = debug ? 'debug' : 'production';
+
+		const projectPath = resolvePath(definition.projectFolder, scope as vscode.WorkspaceFolder);
+
+		const projectName = path.basename(projectPath);
+
+		// The working directory is changed to the projectPath, so a relative path will work here
+		let hexPath: string = path.join(projectPath, 'dist', configName,
+			typeString, `${projectName}.${typeString}.hex`);
+
+		args.unshift(`-F${hexPath}`);
+
+		const targetConfig = MplabxConfigFile.getTargetInterface(MplabxConfigFile.readSync(projectPath), configName);
+
+		// If the user didn't specify a tool, grab it from the project
+		if (!args.find(arg => arg.match(/-T[PS].*/))) {
+			// Convert from a project name to an IPE name. If a name can't be found,
+			// try using the project name directly. It probably won't work.
+			const ipeTool = supportedTools.find((item) => {
+				return item.projectName === targetConfig.tool;
+			})?.ipeName ?? targetConfig.tool;
+
+			args.unshift(`-TP${ipeTool}`);
+		}
+
+		const deviceMatch = targetConfig.device.match(/\d.*/);
+
+		const device = deviceMatch ? deviceMatch[0] : targetConfig.device;
+		args.unshift(`-P${device}`);
+
+		const executablePath = this.paths.mplabxIpecmdPath;
+
+		return new vscode.Task(
+			definition,
+			scope ?? vscode.TaskScope.Workspace,
+			'Build',
+			'MPLABX Make',
+			new vscode.ProcessExecution(executablePath, args, {
+				cwd: path.dirname(executablePath)
 			}),
 			'$xc'
 		);

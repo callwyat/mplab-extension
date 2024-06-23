@@ -1,29 +1,54 @@
 {
-    "MPLABX Build" : {
-        "prefix": ["mplabx-build"],
-        "body": [ "{",
-                  "\t\"label\": \"MPLABX Build\",",
-                  "\t\"type\": \"mplabx\",",
-                  "\t\"task\": \"build\",",
-                  "\t\"projectFolder\": \"\\${workspaceFolder}/\\${1:Path to MPLABX Project}\",",
-                  "\t\"args\": [",
-                  "\t\t\"CONF=\\\"default\\\"\",",
-                  "\t],",
-                  "\t\"problemMatcher\": [",
-                  "\t\t{",
-                  "\t\t\t\"base\": \"\\$xc\",",
-                  "\t\t\t\"fileLocation\": [",
-                  "\t\t\t\t\"relative\",",
-                  "\t\t\t\t\"${workspaceFolder\\}/\\${1}\"",
-                  "\t\t\t],",
-                  "\t\t}",
-                  "\t],",
-                  "\t\"group\": {",
-                  "\t\t\"kind\": \"build\",",
-                  "\t\t\"isDefault\": true",
-                  "\t}",
-                  "}"
-                ],
-        "description": "Template for setting a MPLABX Build"
-      }
+  "MPLABX Build": {
+    "prefix": [
+      "mplabx-build"
+    ],
+    "body": [
+      "{",
+      "\t\"label\": \"MPLABX Build\",",
+      "\t\"type\": \"mplabx\",",
+      "\t\"task\": \"build\",",
+      "\t\"projectFolder\": \"\\${workspaceFolder}/\\${1:Path to MPLABX Project}\",",
+      "\t\"args\": [",
+      "\t\t\"CONF=\\\"default\\\"\",",
+      "\t],",
+      "\t\"problemMatcher\": [",
+      "\t\t{",
+      "\t\t\t\"base\": \"\\$xc\",",
+      "\t\t\t\"fileLocation\": [",
+      "\t\t\t\t\"relative\",",
+      "\t\t\t\t\"${workspaceFolder\\}/\\${1}\"",
+      "\t\t\t],",
+      "\t\t}",
+      "\t],",
+      "\t\"group\": {",
+      "\t\t\"kind\": \"build\",",
+      "\t\t\"isDefault\": true",
+      "\t}",
+      "}"
+    ],
+    "description": "Template for setting a MPLABX Build"
+  },
+  "MPLABX Program": {
+    "prefix": [
+      "mplabx-program"
+    ],
+    "body": [
+      "{",
+      "\t\"label\": \"MPLABX Program\",",
+      "\t\"type\": \"mplabx\",",
+      "\t\"task\": \"program\",",
+      "\t\"projectFolder\": \"\\${workspaceFolder}/\\${1:Path to MPLABX Project}\",",
+      "\t\"args\": [",
+      "\t\t\"CONF=\\\"default\\\"\",",
+      "\t\t\"-M\",\t// Program all regions",
+      "\t\t\"-I\",\t// Display Device ID",
+      "\t\t\"-OL\"\t// Release from Reset",
+      "\t],",
+      "\t\"problemMatcher\": [],",
+      "\t\"dependsOn\": \"MPLABX Build\"",
+      "}"
+    ],
+    "description": "Template for programming with a MPLABX"
+  }
 }

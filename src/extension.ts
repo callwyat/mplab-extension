@@ -140,13 +140,15 @@ export function activate(context: vscode.ExtensionContext) {
 				if (task) {
 					const definition: MpMakeTaskDefinition = <any>_task.definition;
 
-					if (task === "build") {
-						// resolveTask requires that the same definition object be used.
-						return mplabxAssistant.getBuildTask(definition, _task.scope);
+					switch (task) {
+						case 'build':
+							return mplabxAssistant.getBuildTask(definition, _task.scope);
 
-					} else if (task === "clean") {
+						case 'clean':
+							return mplabxAssistant.getCleanTask(definition, _task.scope);
 
-						return mplabxAssistant.getCleanTask(definition, _task.scope);
+						case 'program':
+							return mplabxAssistant.getProgramTask(definition, _task.scope);
 					}
 				}
 			}

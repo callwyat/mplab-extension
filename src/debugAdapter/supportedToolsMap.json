@@ -2,79 +2,93 @@
     {
         "projectName": "PKOBSKDEPlatformTool",
         "mdbName": "sk",
+        "ipeName": "PKOB",
         "description": "Starter Kits (PKOB)",
         "validated": false
     },
     {
         "projectName": "PICkit3PlatformTool",
         "mdbName": "PICKit3",
+        "ipeName": "PK3",
         "description": "MPLAB® PICkit™ 3 In-Circuit Debugger",
         "validated": true
     },
     {
         "projectName": "pk4hybrid",
         "mdbName": "PICKit4",
+        "ipeName": "PK4",
         "description": "MPLAB® PICkit™ 4 In-Circuit Debugger",
         "validated": true
     },
     {
         "projectName": "pkob4hybrid",
         "mdbName": "PKOB4",
+        "ipeName": "PKOB4",
         "description": "The PICKit4, but built onto a board",
         "validated": false
     },
     {
         "projectName": "PK5Tool",
         "mdbName": "pickit5",
+        "ipeName": "PK5",
         "description": "MPLAB® PICkit™ 5 In-Circuit Debugger",
         "validated": true
     },
     {
         "projectName": "ri4hybrid",
         "mdbName": "ICE4",
+        "ipeName": "ICE4",
         "description": "MPLAB® ICE 4 In-Circuit Emulator, Programmer and Debugger",
         "validated": true
     },
     {
         "projectName": "ICD2PlatformTool",
         "mdbName": "icd2",
+        "ipeName": "ICD2",
         "description": "MPLAB ICD 2 IN-CIRCUIT DEBUGGER",
         "validated": false
     },
     {
         "projectName": "ICD3PlatformTool",
         "mdbName": "icd3",
+        "ipeName": "ICD3",
         "description": "MPLAB ICD 3 IN-CIRCUIT DEBUGGER",
         "validated": true
     },
     {
         "projectName": "ICD4Tool",
         "mdbName": "icd4",
+        "ipeName": "ICD4",
         "description": "MPLAB ICD 4 IN-CIRCUIT DEBUGGER",
         "validated": true
     },
     {
         "projectName": "ICD5Tool",
         "mdbName": "icd5",
+        "ipeName": "ICD5",
         "description": "MPLAB ICD 5 IN-CIRCUIT DEBUGGER",
         "validated": false
     },
     {
         "projectName": "Simulator",
         "mdbName": "Sim",
+        "ipeName": "Sim",
         "description": "Simulates a chip",
         "validated": true,
-        "notes": "Stimulus files are not yet supported"
+        "stimulusNotes": "Stimulus files are not yet supported",
+        "ipeNotes": "This doesn't make sense in the context of the IPE, but I'll allow it"
     },
     {
         "projectName": "jlink",
         "mdbName": "jlink",
+        "ipeName": "jlink",
         "description": "J-Link",
         "validated": true
     },
     {
         "projectName": "snap",
         "mdbName": "snap",
+        "ipeName": "SNAP",
         "description": "MPLAB® Snap In-Circuit Debugger/Programmer",
         "validated": true
     }
