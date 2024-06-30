@@ -50,5 +50,22 @@
       "}"
     ],
     "description": "Template for programming with a MPLABX"
+  },
+  "MPLABX Command": {
+    "prefix": [
+      "mplabx-command"
+    ],
+    "body": [
+      "{",
+      "\t\"label\": \"MPLABX Command\",",
+      "\t\"type\": \"mplabx-command\",",
+      "\t\"command\": \"mdb\",",
+      "\t\"args\": [",
+      "\t\t\"device ${1:Target device ID}\",",
+      "\t\t\"hwtool ${2:Programer ID} -p\",",
+      "\t\t\"program \\${workspaceFolder}/${3:Path to hex file}\"",
+      "\t]",
+      "}"
+    ]
   }
 }

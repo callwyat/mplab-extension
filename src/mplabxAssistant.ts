@@ -10,6 +10,8 @@ import { resolvePath } from './common/vscodeHelpers';
 
 import supportedTools = require('./debugAdapter/supportedToolsMap.json');
 import path = require('path');
+import os = require('os');
+import fs = require('fs');
 
 /** A helper class for finding all the MPLABX things */
 export class MPLABXAssistant {
@@ -194,6 +196,64 @@ export class MPLABXAssistant {
 			'$xc'
 		);
 	}
+
+	/**
+	 * Creates a task that utilizes one of the mplabx executables mapped by this extension
+	 * @param definition What command and args to use
+	 * @param scope Scope
+	 * @returns A task
+	 */
+	public getToolTask(definition: MpToolTaskDefinition,
+		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
+
+		var executablePath: string;
+		let args: string[] = [];
+
+		if (definition.args) {
+			// Resolve any references that may exist
+			for (let i = 0; i < definition.args.length; i++) {
+				args.push(resolvePath(definition.args[i], scope as vscode.WorkspaceFolder));
+			}
+		}
+
+		switch (definition.command) {
+			case 'mdb':
+				executablePath = this.paths.mplabxDebuggerPath;
+
+				if (vscode.workspace.getConfiguration('vslabx').get<boolean>('mdbCommandArgsRedirectToScript', true)) {
+					const scriptPath = path.join(os.tmpdir(), 'vslabx.mdb');
+
+					// Make sure that the mdb quits at the end
+					args.push('quit');
+					fs.writeFileSync(scriptPath, args.join('\n'));
+					args = [scriptPath];
+				}
+				break;
+
+			case 'ipe':
+				executablePath = this.paths.mplabxIpecmdPath;
+				break;
+
+			case 'make':
+				executablePath = this.paths.mplabxMakePath;
+				break;
+
+			case 'makeFileGenerator':
+				executablePath = this.paths.mplabxMakefileGeneratorPath;
+				break;
+		}
+
+		return new vscode.Task(
+			definition,
+			scope ?? vscode.TaskScope.Workspace,
+			'Build',
+			'MPLABX Make',
+			new vscode.ProcessExecution(executablePath, args, {
+				cwd: definition.projectFolder
+			}),
+			'$xc'
+		);
+	}
 }
 
 /**
@@ -216,5 +276,15 @@ export interface MpMakeTaskDefinition extends vscode.TaskDefinition {
 	debug?: boolean;
 
 	/** Additional arguments to pass into the make command */
+	args?: string[];
+}
+
+
+export interface MpToolTaskDefinition extends vscode.TaskDefinition {
+
+	/** The command to use when sending the program */
+	command: 'make' | 'makeFileGenerator' | 'mdb' | 'ipe';
+
+	/** Additional arguments to pass into the programming command */
 	args?: string[];
 }

@@ -119,6 +119,12 @@
             "default": "default",
             "description": "Specifies the absolute path to use when invoking Microchip's 'ipecmd' command. ",
             "scope": "machine-overridable"
+          },
+          "vslabx.mdbCommandArgsRedirectToScript": {
+            "type": "boolean",
+            "default": true,
+            "description": "When true, any args passed to the 'mplabx-command' task while using the 'mdb' command, will be automatically be written to a temporary file and consumed by the mdb executable as a script.",
+            "scope": "machine-overridable"
           }
         }
       }
@@ -328,6 +334,39 @@
             },
             "uniqueItems": true,
             "description": "A list of additional arguments to add to the make command"
+          }
+        }
+      },
+      {
+        "type": "mplabx-command",
+        "required": [
+          "command",
+          "args"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The short name of the MPLABX command to use.",
+            "enum": [
+              "make",
+              "makefilegenerator",
+              "mdb",
+              "ipe"
+            ]
+          },
+          "filePath": {
+            "type": "string",
+            "description": "The absolute path to the program file send to the device",
+            "default": "${workspaceFolder}/dist/default/debug/${1:projectName}.debug.hex"
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "examples": []
+            },
+            "uniqueItems": true,
+            "description": "A list of additional arguments to add to the programming software"
           }
         }
       }

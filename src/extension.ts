@@ -20,7 +20,7 @@ import * as vscode from 'vscode';
 import { ProviderResult } from 'vscode';
 import { MdbDebugSession } from './debugAdapter/mplabxDebug';
 import { activateMplabxDebug } from './debugAdapter/activateMplabxDebug';
-import { MPLABXAssistant, MpMakeTaskDefinition } from './mplabxAssistant';
+import { MPLABXAssistant, MpMakeTaskDefinition, MpToolTaskDefinition } from './mplabxAssistant';
 import { MPLABXPaths } from './common/mplabPaths';
 import { MDBCommunications } from './debugAdapter/mdbCommunications';
 import { waitForTaskCompletion } from './common/taskHelpers';
@@ -151,6 +151,17 @@ export function activate(context: vscode.ExtensionContext) {
 							return mplabxAssistant.getProgramTask(definition, _task.scope);
 					}
 				}
+			}
+		}),
+		vscode.tasks.registerTaskProvider('mplabx-command', {
+			provideTasks(token?: vscode.CancellationToken) {
+				return [];
+			},
+			resolveTask(_task: vscode.Task): vscode.Task | undefined {
+				
+				const definition: MpToolTaskDefinition = <any>_task.definition;
+
+				return mplabxAssistant.getToolTask(definition, _task.scope);
 			}
 		}),
 	);
