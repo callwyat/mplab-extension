@@ -47,7 +47,7 @@ export class MPLABXAssistant {
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
 			'Generate',
-			'MPLABX Make',
+			'VSLABX',
 			new vscode.ProcessExecution(this.paths.mplabxMakefileGeneratorPath, args, {
 				cwd: definition.projectFolder
 			})
@@ -82,7 +82,7 @@ export class MPLABXAssistant {
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
 			'Clean',
-			'MPLABX Make',
+			'VSLABX',
 			new vscode.ProcessExecution(this.paths.mplabxMakePath, args, {
 				cwd: definition.projectFolder
 			}),
@@ -103,7 +103,7 @@ export class MPLABXAssistant {
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
 			'Build',
-			'MPLABX Make',
+			'VSLABX',
 			new vscode.ProcessExecution(this.paths.mplabxMakePath, args, {
 				cwd: definition.projectFolder
 			}),
@@ -188,10 +188,10 @@ export class MPLABXAssistant {
 		return new vscode.Task(
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
-			'Build',
-			'MPLABX Make',
-			new vscode.ProcessExecution(executablePath, args, {
-				cwd: path.dirname(executablePath)
+			'Program',
+			'VSLABX',
+			new vscode.ProcessExecution(execution.process, execution.args, {
+				cwd: path.dirname(execution.process)
 			}),
 			'$xc'
 		);
