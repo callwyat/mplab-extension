@@ -16,6 +16,20 @@
 			"preLaunchTask": "${defaultBuildTask}"
 		},
 		{
+			"name": "Run Extension - Quiet",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--disable-extensions",
+				"${workspaceFolder}/../Quiet-Firmware"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
+			"preLaunchTask": "${defaultBuildTask}"
+		},
+		{
 			"name": "Extension Tests",
 			"type": "extensionHost",
 			"request": "launch",
