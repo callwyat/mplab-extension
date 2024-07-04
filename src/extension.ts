@@ -96,6 +96,19 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}),
 
+		vscode.commands.registerCommand('vslabx.program', async () => {
+
+			const projectPath = await selectMplabxProjectFolder();
+			if (projectPath) {
+				const task = await vscode.tasks.executeTask(mplabxAssistant.getProgramTask({
+					projectFolder: projectPath,
+					type: 'program'
+				}));
+
+				return await waitForTaskCompletion(task);
+			}
+		}),
+
 		vscode.commands.registerCommand('vslabx.listSupportedTools', async title => {
 
 			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);

@@ -50,6 +50,10 @@
         "title": "MPLABX: Build Project"
       },
       {
+        "command": "vslabx.program",
+        "title": "MPLABX: Program Project"
+      },
+      {
         "command": "vslabx.listSupportedTools",
         "title": "MDB: List Supported Tool Types"
       },
