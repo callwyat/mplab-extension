@@ -156,8 +156,7 @@ export class MPLABXPaths {
 		if (macos) {
 			return path.join(ipePath, 'bin', 'ipecmd.sh');
 		} else if (linux) {
-			// TODO: This will probably not work
-			return `java -jar "${path.join(ipePath, 'ipecmd.jar')}"`;
+			return path.join(ipePath, 'ipecmd.sh');
 		} else if (windows) {
 			return path.join(ipePath, 'ipecmd.exe');
 		} else {
