@@ -65,12 +65,22 @@ export class MplabxConfigFile {
     }
 
     /**
+     * Gets the name of the configuration to use based on the provide config name
+     * @param project The project object as obtained from the read or readSync methods
+     * @param configName The name of the configuration to get project file
+     * @returns The configuration name that makes the most sense based on the config name
+     */
+    public static resolveConfigurationName(project: any, configName?: string): string {
+        return this.resolveConfiguration(project, configName).name;
+    }
+
+    /**
      * Reads the information for connecting to a target from a configuration file
      * @param project The project object as obtained from the read or readSync methods
-     * @param configuration The name of the configuration to get the Target Interface from
-     * @returns The information needed to connect to a target device
+     * @param configName The name of the configuration to get project file
+     * @returns The configuration to use
      */
-    public static getTargetInterface(project: any, configuration?: string): TargetInterface {
+    public static resolveConfiguration(project: any, configName?: string): any {
         let confs = project.confs.conf;
         let conf: any;
 
@@ -83,16 +93,29 @@ export class MplabxConfigFile {
             conf = confs[0];
         } else {
 
-            if (!configuration) {
-                configuration = 'default';
+            if (!configName) {
+                configName = 'default';
             }
 
-            conf = confs.find(c => c.name === configuration);
+            conf = confs.find(c => c.name === configName);
 
             if (!conf) {
-                throw Error(`Failure to find a "${configuration}" configuration in given project. Please specify a "configuration".`);
+                throw Error(`Failure to find a "${configName}" configuration in given project. Please specify a "configuration".`);
             }
         }
+
+        return conf;
+    }
+
+    /**
+     * Reads the information for connecting to a target from a configuration file
+     * @param project The project object as obtained from the read or readSync methods
+     * @param configName The name of the configuration to get the Target Interface from
+     * @returns The information needed to connect to a target device
+     */
+    public static getTargetInterface(project: any, configName?: string): TargetInterface {
+
+        const conf = this.resolveConfiguration(project, configName);
 
         const tool = conf.toolsSet.platformTool;
 
