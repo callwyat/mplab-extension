@@ -248,6 +248,10 @@ export class MPLABXAssistant {
 			}
 		}
 
+		const options = {
+			cwd: definition.projectFolder
+		};
+
 		switch (definition.command) {
 			case 'mdb':
 				executablePath = this.paths.mplabxDebuggerPath;
@@ -264,6 +268,9 @@ export class MPLABXAssistant {
 
 			case 'ipe':
 				executablePath = this.paths.mplabxIpecmdPath;
+
+				// The IPE only seam to work when the working directory is the parent of the executable
+				options.cwd = path.dirname(executablePath);
 				break;
 
 			case 'make':
@@ -280,9 +287,7 @@ export class MPLABXAssistant {
 			scope ?? vscode.TaskScope.Workspace,
 			'MPLABX Command',
 			'VSLABX',
-			new vscode.ProcessExecution(executablePath, args, {
-				cwd: definition.projectFolder
-			}),
+			new vscode.ProcessExecution(executablePath, args, options),
 			'$xc'
 		);
 	}
