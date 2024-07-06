@@ -29,9 +29,28 @@
     ],
     "description": "Template for setting a MPLABX Build"
   },
-  "MPLABX Program": {
+  "MPLABX Program MDB": {
     "prefix": [
-      "mplabx-program"
+      "mplabx-program",
+      "mplabx-program-mdb"
+    ],
+    "body": [
+      "{",
+      "\t\"label\": \"MPLABX Program\",",
+      "\t\"type\": \"mplabx\",",
+      "\t\"task\": \"program\",",
+      "\t\"projectFolder\": \"\\${workspaceFolder}/\\${1:Path to MPLABX Project}\",",
+      "\t\"command\": \"mdb\",",
+      "\t\"args\": [],",
+      "\t\"problemMatcher\": [],",
+      "\t\"dependsOn\": \"MPLABX Build\"",
+      "}"
+    ],
+    "description": "Template for programming with a MPLABX.  (Note: the program won't release the reset line if using macOS)"
+  },
+  "MPLABX Program IPE": {
+    "prefix": [
+      "mplabx-program-ipe"
     ],
     "body": [
       "{",
@@ -49,11 +68,44 @@
       "\t\"dependsOn\": \"MPLABX Build\"",
       "}"
     ],
-    "description": "Template for programming with a MPLABX"
+    "description": "Template for programming with a MPLABX.  (Note: the program won't release the reset line if using macOS)"
   },
-  "MPLABX Command": {
+  "VSLABX Build": {
     "prefix": [
-      "mplabx-command"
+      "vslabx-build"
+    ],
+    "body": [
+      "{",
+      "\t\"label\": \"VSLABX Build\",",
+      "\t\"type\": \"mplabx-command\",",
+      "\t\"command\": \"make\",",
+      "\t\"args\": [",
+      "\t\t\"CONF=\\\"default\\\"\",",
+      "\t],",
+      "\t\"options\": {",
+      "\t\t\"cwd\": \"${workspaceFolder\\}/\\${1:Path to MPLABX project root}\"",
+      "\t},",
+      "\t\"problemMatcher\": [",
+      "\t\t{",
+      "\t\t\t\"base\": \"\\$xc\",",
+      "\t\t\t\"fileLocation\": [",
+      "\t\t\t\t\"relative\",",
+      "\t\t\t\t\"${workspaceFolder\\}/\\${1:Path to MPLABX project root}\"",
+      "\t\t\t],",
+      "\t\t}",
+      "\t],",
+      "\t\"group\": {",
+      "\t\t\"kind\": \"build\",",
+      "\t\t\"isDefault\": true",
+      "\t}",
+      "}"
+    ],
+    "description": "Template for setting a MPLABX Build"
+  },
+  "VSLABX Program MDB": {
+    "prefix": [
+      "vslabx-program",
+      "vslabx-program-mdb"
     ],
     "body": [
       "{",
@@ -61,11 +113,33 @@
       "\t\"type\": \"mplabx-command\",",
       "\t\"command\": \"mdb\",",
       "\t\"args\": [",
-      "\t\t\"device ${1:Target device ID}\",",
-      "\t\t\"hwtool ${2:Programer ID} -p\",",
+      "\t\t\"device ${1:Target device ID}\",\t// e.g. PIC18F46J53",
+      "\t\t\"hwtool ${2:Programer ID} -p\",\t// e.g. PICKit4",
       "\t\t\"program \\${workspaceFolder}/${3:Path to hex file}\"",
       "\t]",
       "}"
-    ]
+    ],
+    "description": "Template for programming directly with Microchip Debugger. (Note: the program won't release the reset line if using macOS)"
+  },
+  "VSLABX Program IPE": {
+    "prefix": [
+      "vslabx-program-ipe"
+    ],
+    "body": [
+      "{",
+      "\t\"label\": \"MPLABX Command\",",
+      "\t\"type\": \"mplabx-command\",",
+      "\t\"command\": \"ipe\",",
+      "\t\"args\": [",
+      "\t\t\"-P${1:Target Device ID}\",\t// e.g. 18F46J53",
+      "\t\t\"-TP${2:Programer ID}\",\t// e.g. PK4",
+      "\t\t\"-F\\${workspaceFolder}/${3:Path to hex file}\",",
+      "\t\t\"-M\",\t// Program all regions",
+      "\t\t\"-I\",\t// Display Device ID",
+      "\t\t\"-OL\"\t// Release from Reset",
+      "\t]",
+      "}"
+    ],
+    "description": "Template for programming directly with Microchip Integrated Programming Environment"
   }
 }
