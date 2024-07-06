@@ -13,6 +13,18 @@ import path = require('path');
 import os = require('os');
 import fs = require('fs');
 
+const defaultString = 'default';
+
+/** Bare bones interface to the supportedToolsMap.json */
+interface ToolNameMap {
+	/** The name the project files use for the tool */
+	projectName: string;
+	/** The name MDB uses for the tool */
+	mdbName: string;
+	/** The name IPE uses for the tool */
+	ipeName: string;
+}
+
 /** A helper class for finding all the MPLABX things */
 export class MPLABXAssistant {
 
@@ -115,13 +127,24 @@ export class MPLABXAssistant {
 	public getProgramTask(definition: MpMakeTaskDefinition,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 
+		let programMode: 'mdb' | 'ipe' = 'mdb';
+
+		if (definition.command === 'mdb' || definition.command === 'ipe') {
+			programMode = definition.command;
+		} else {
+			// Try to figure out from the args what tool the user is trying to use.
+			if (definition.args?.find(arg => arg.match(/^-([Oo])/))) {
+				programMode = 'ipe';
+			}
+		}
+
 		let args: string[] = [];
 
 		if (definition.args) {
 			args.push(...definition.args);
 		}
 
-		let configName: string = 'default';
+		let configName: string = defaultString;
 
 		if (definition?.configuration) {
 			configName = definition.configuration;
@@ -147,6 +170,7 @@ export class MPLABXAssistant {
 		} else {
 			const arg = definition.args?.find(arg => arg.match(/TYPE_IMAGE=DEBUG_RUN/));
 
+			// Remove the element from the array
 			if (arg) {
 				debug = true;
 				args.splice(args.indexOf(arg), 1);
@@ -159,11 +183,11 @@ export class MPLABXAssistant {
 
 		const projectName = path.basename(projectPath);
 
-		// The working directory is changed to the projectPath, so a relative path will work here
+		// The absolute path to the hex file is used because changing the working directory didn't work all the time
 		let hexPath: string = path.join(projectPath, 'dist', configName,
 			typeString, `${projectName}.${typeString}.hex`);
 
-		args.unshift(`-F${hexPath}`);
+		args.unshift((programMode === 'ipe' ? '-F' : 'program ') + hexPath);
 
 		const targetConfig = MplabxConfigFile.getTargetInterface(MplabxConfigFile.readSync(projectPath), configName);
 
@@ -171,19 +195,27 @@ export class MPLABXAssistant {
 		if (!args.find(arg => arg.match(/-T[PS].*/))) {
 			// Convert from a project name to an IPE name. If a name can't be found,
 			// try using the project name directly. It probably won't work.
-			const ipeTool = supportedTools.find((item) => {
+			const toolMap: ToolNameMap = supportedTools.find((item) => {
 				return item.projectName === targetConfig.tool;
-			})?.ipeName ?? targetConfig.tool;
+			}) ?? {
+				projectName: targetConfig.tool,
+				mdbName: targetConfig.tool,
+				ipeName: targetConfig.tool
+			};
 
-			args.unshift(`-TP${ipeTool}`);
+			args.unshift(programMode === 'ipe' ? `-TP${toolMap.ipeName}` : `hwtool ${toolMap.mdbName} -p`);
 		}
 
 		const deviceMatch = targetConfig.device.match(/\d.*/);
 
 		const device = deviceMatch ? deviceMatch[0] : targetConfig.device;
-		args.unshift(`-P${device}`);
+		args.unshift(programMode === 'ipe' ? `-P${device}` : `device ${targetConfig.device}`);
 
-		const executablePath = this.paths.mplabxIpecmdPath;
+		const execution = this.getToolTask({
+			type: "mplabx-command",
+			command: programMode,
+			args: args
+		}).execution as vscode.ProcessExecution;
 
 		return new vscode.Task(
 			definition,
@@ -246,8 +278,8 @@ export class MPLABXAssistant {
 		return new vscode.Task(
 			definition,
 			scope ?? vscode.TaskScope.Workspace,
-			'Build',
-			'MPLABX Make',
+			'MPLABX Command',
+			'VSLABX',
 			new vscode.ProcessExecution(executablePath, args, {
 				cwd: definition.projectFolder
 			}),
@@ -274,6 +306,11 @@ export interface MpMakeTaskDefinition extends vscode.TaskDefinition {
 	 * @deprecated Replaced by adding `TYPE_IMAGE=DEBUG_RUN` to the `args.
 	 */
 	debug?: boolean;
+
+	/**
+	 * The name of the command to use when running the program task
+	 */
+	command?: string;
 
 	/** Additional arguments to pass into the make command */
 	args?: string[];

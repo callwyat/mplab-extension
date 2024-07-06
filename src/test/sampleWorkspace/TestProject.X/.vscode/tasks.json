@@ -61,6 +61,16 @@
                     ],
                 }
             ]
+        },
+        {
+            "label": "MPLABX Program",
+            "type": "mplabx",
+            "task": "program",
+            "projectFolder": "${workspaceFolder}",
+            "configuration": "default",
+            "dependsOn": [
+                "MPLABX Build"
+            ]
         }
     ]
 }

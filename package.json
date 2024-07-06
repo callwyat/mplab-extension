@@ -325,6 +325,14 @@
             "description": "Deprecated - Replace by adding 'TYPE_IMAGE=DEBUG_RUN' to the 'args' list. Boolean indicating debug build or production build",
             "deprecated": true
           },
+          "command": {
+            "type": "string",
+            "description": "Used by the 'program' task to determine which program command to use",
+            "enum": [
+              "ipe",
+              "mdb"
+            ]
+          },
           "args": {
             "type": "array",
             "items": {
