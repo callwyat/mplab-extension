@@ -64,10 +64,78 @@ To create a build task:
 * Now running the build command will build the selected project
 
 ## Program
-TODO: Implement
+This extension supports a few methods for programming that fall into two major catagories, the [Microchip Debugger (MDB)](#microchip-debugger-mdb-programming) and the [Integrated Programming Environment](#integrated-programming-environment-ipe).
+
+### Microchip Debugger (MDB) Programming
+The Microchip Debugger comes built-in with MPLABX, which makes it the most ideal choice as it doesn't require any extra software be installed in order to work. 
+
+However, it does have a few oddities, such as not taking arguments directly, opting instead to take them in view a "script file", and not releasing the reset line to the target device after programming when ran on macOS. The macOS issue is something that Microchip will need to address. To address the need for a script instead of command line arguments, the extension will automatically take all `args` and save them to a temporary file first, then the path of the script is passed to the mdb execution. If you would like to use the `mdb` command directly, you can override the behavior with the `Mdb Command Args Redirect To Script` setting.
+
+Here are a few examples of how to use the `mdb` command from a task:
+```JSON
+{
+    // This configuration will attempt to generate the standard arguments for the user from the project file
+    "label": "MPLABX Program",
+    "type": "mplabx",
+    "task": "program",
+    "projectFolder": "${workspaceFolder}/${1:Path to MPLABX Project}",
+    "command": "mdb",
+    "args": [],
+    "problemMatcher": [],
+    "dependsOn": "MPLABX Build"
+},
+{
+    // This configuration allows the user to specify exactly what they want while the extension only finds the path to the mdb executable
+    "label": "MPLABX Command",
+    "type": "vslabx",
+    "command": "mdb",
+    "args": [
+        "device PIC18F46J53",
+        "hwtool PICKit4 -p",	// The '-p' flag puts the tool in Programer mode.
+        "program ${workspaceFolder}/dist/default/production/{hex file name}"
+    ]
+}
+```
+
+### Integrated Programming Environment (IPE)
+The MPLABX Integrated Programming Environment (IPE) is an optional program that can be installed while installing the MPLABX Integrated Development Environment (IDE). This method provides a standard command line interface though, and works reliably on all operating systems that support MPLABX. However, it is an optional program, so care needs to be taken when installing MPLABX IDE to make sure MPLABX IPE is also installed.
+
+Here are a few examples of how to use the `ipe` command from a task:
+```JSON
+    // This configuration will attempt to generate the standard arguments for the user from the project file
+    {
+        "label": "MPLABX Program",
+        "type": "mplabx",
+        "task": "program",
+        "projectFolder": "${workspaceFolder}/${1:Path to MPLABX Project}",
+        "command": "ipe",
+        "args": [
+            "CONF=\"default\"",
+            "-M",	// Program all regions
+            "-I",	// Display Device ID
+            "-OL"	// Release from Reset
+        ],
+        "problemMatcher": [],
+        "dependsOn": "MPLABX Build"
+    },
+    // This configuration allows the user to specify exactly what they want while the extension only finds the path to the ipe executable
+    {
+        "label": "MPLABX Command",
+        "type": "vslabx",
+        "command": "ipe",
+        "args": [
+            "-P18F46J53",	// -P plus the name of the target device minus "PIC"
+            "-TPPK4",       // -TP plus the name of the tool to use
+            "-F${workspaceFolder}/dist/default/production/{hex file name}",
+            "-M",	// Program all regions
+            "-I",	// Display Device ID
+            "-OL"	// Release from Reset
+        ]
+    }
+```
 
 ## Debug
-This extension support two methods of launching a debug session: [MPLABX](#mplabx) and [MDB](#mdb).
+This extension supports two methods of launching a debug session: [MPLABX](#mplabx) and [MDB](#mdb).
 
 #### MPLABX
 This method is designed to be the easiest to use. All programer settings are pulled from the project file in `nbproject/configuration.xml`. This includes what tool to use and any voltage settings. If programer settings need to be changed, it is recommended to change them from withing MPLABX to prevent corrupting the project.
