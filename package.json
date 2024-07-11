@@ -127,7 +127,7 @@
           "vslabx.mdbCommandArgsRedirectToScript": {
             "type": "boolean",
             "default": true,
-            "description": "When true, any args passed to the 'mplabx-command' task while using the 'mdb' command, will be automatically be written to a temporary file and consumed by the mdb executable as a script.",
+            "description": "When true, any args passed to the 'vslabx' task while using the 'mdb' command, will be automatically be written to a temporary file and consumed by the mdb executable as a script.",
             "scope": "machine-overridable"
           }
         }
@@ -350,7 +350,7 @@
         }
       },
       {
-        "type": "mplabx-command",
+        "type": "vslabx",
         "required": [
           "command",
           "args"

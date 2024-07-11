@@ -212,7 +212,7 @@ export class MPLABXAssistant {
 		args.unshift(programMode === 'ipe' ? `-P${device}` : `device ${targetConfig.device}`);
 
 		const execution = this.getToolTask({
-			type: "mplabx-command",
+			type: "vslabx",
 			command: programMode,
 			args: args
 		}).execution as vscode.ProcessExecution;

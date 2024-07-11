@@ -57,6 +57,7 @@
       "\t\"label\": \"MPLABX Program\",",
       "\t\"type\": \"mplabx\",",
       "\t\"task\": \"program\",",
+      "\t\"command\": \"ipe\",",
       "\t\"projectFolder\": \"\\${workspaceFolder}/\\${1:Path to MPLABX Project}\",",
       "\t\"args\": [",
       "\t\t\"CONF=\\\"default\\\"\",",
@@ -77,7 +78,7 @@
     "body": [
       "{",
       "\t\"label\": \"VSLABX Build\",",
-      "\t\"type\": \"mplabx-command\",",
+      "\t\"type\": \"vslabx\",",
       "\t\"command\": \"make\",",
       "\t\"args\": [",
       "\t\t\"CONF=\\\"default\\\"\",",
@@ -110,7 +111,7 @@
     "body": [
       "{",
       "\t\"label\": \"MPLABX Command\",",
-      "\t\"type\": \"mplabx-command\",",
+      "\t\"type\": \"vslabx\",",
       "\t\"command\": \"mdb\",",
       "\t\"args\": [",
       "\t\t\"device ${1:Target device ID}\",\t// e.g. PIC18F46J53",
@@ -128,7 +129,7 @@
     "body": [
       "{",
       "\t\"label\": \"MPLABX Command\",",
-      "\t\"type\": \"mplabx-command\",",
+      "\t\"type\": \"vslabx\",",
       "\t\"command\": \"ipe\",",
       "\t\"args\": [",
       "\t\t\"-P${1:Target Device ID}\",\t// e.g. 18F46J53",
