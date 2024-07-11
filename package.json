@@ -361,7 +361,7 @@
             "description": "The short name of the MPLABX command to use.",
             "enum": [
               "make",
-              "makefilegenerator",
+              "makeFileGenerator",
               "mdb",
               "ipe"
             ]
