@@ -33,6 +33,8 @@ const runMode: 'external' | 'server' | 'namedPipeServer' | 'inline' = 'server';
 
 const mplabxAssistant = new MPLABXAssistant();
 
+const mplabxPaths = new MPLABXPaths();
+
 export function activate(context: vscode.ExtensionContext) {
 
 	// debug adapters can be run in different ways by using a vscode.DebugAdapterDescriptorFactory:
@@ -51,7 +53,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 
 		vscode.commands.registerCommand('vslabx.getMplabxInstallLocation', config => {
-			return new MPLABXPaths().mplabxFolder;
+			return mplabxPaths.mplabxFolder;
 		}),
 
 		vscode.commands.registerCommand('vslabx.updateMakeFiles', async () => {
@@ -111,7 +113,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		vscode.commands.registerCommand('vslabx.listSupportedTools', async title => {
 
-			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
+			let mdb = new MDBCommunications(mplabxPaths.mplabxDebuggerPath);
 			return await vscode.window.showQuickPick(
 				mdb.getSupportedProgramers().then((supportedProgramers) => {
 
@@ -128,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		vscode.commands.registerCommand('vslabx.listAttachedTools', title => {
 
-			let mdb = new MDBCommunications(new MPLABXPaths().mplabxDebuggerPath);
+			let mdb = new MDBCommunications(mplabxPaths.mplabxDebuggerPath);
 			return vscode.window.showQuickPick(
 				mdb.getAttachedProgramers().then((attachedProgramers) => {
 
@@ -166,12 +168,12 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 			}
 		}),
-		vscode.tasks.registerTaskProvider('mplabx-command', {
+		vscode.tasks.registerTaskProvider('vslabx', {
 			provideTasks(token?: vscode.CancellationToken) {
 				return [];
 			},
 			resolveTask(_task: vscode.Task): vscode.Task | undefined {
-				
+
 				const definition: MpToolTaskDefinition = <any>_task.definition;
 
 				return mplabxAssistant.getToolTask(definition, _task.scope);
