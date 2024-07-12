@@ -1,4 +1,14 @@
 # Changelog
+### 0.2.0
+* Added program tasks!
+    * See the readme for details on how to set up a program task
+* Created a new `vslabx` task type that gives the user direct access to the following
+  mplabx command:
+    * make
+    * makeFileGenerator
+    * ipe
+    * mdb
+
 ### 0.1.32
 * Addressed [Issue #26](https://github.com/callwyat/mplab-extension/issues/26).
     * All paths to Microchip command (e.g. mdb, make, ipe_cmd) can now be overridden
