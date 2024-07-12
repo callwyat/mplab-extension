@@ -32,14 +32,14 @@ To create a build task:
         "label": "MPLABX Build",
         "type": "mplabx",
         "task": "build",
-        "projectFolder": "${workspaceFolder}/\"Path to MPLABX Project\"",
+        "projectFolder": "${workspaceFolder}/{Path to MPLABX Project}",
         "configuration": "default",
         "problemMatcher": [
             {
                 "base": "$xc",
                 "fileLocation": [
                     "relative",
-                    "${workspaceFolder}/\"Path to MPLABX Project\""
+                    "${workspaceFolder}/{Path to MPLABX Project}"
                 ],
             }
         ],
