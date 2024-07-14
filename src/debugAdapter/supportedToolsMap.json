@@ -91,5 +91,12 @@
         "ipeName": "SNAP",
         "description": "MPLAB® Snap In-Circuit Debugger/Programmer",
         "validated": true
+    },
+    {
+        "projectName": "EdbgTool",
+        "mdbName": "Edbg",
+        "ipeName": "EDBG",
+        "description": "Atmel® Embedded Debugger",
+        "validated": false 
     }
 ]
