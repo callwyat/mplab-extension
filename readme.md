@@ -27,7 +27,7 @@ To create a build task:
 * Added the `mplabx` build configuration
     * Clear out the contents `tasks` object (from square bracket open to close)
     * Start typing `mplabx-build` and press enter to insert the following snippet
-   ```JSON
+   ```JSONC
     {
         "label": "MPLABX Build",
         "type": "mplabx",
@@ -51,7 +51,7 @@ To create a build task:
     ```
     * If the MPLABX project is not the same as the `workspaceFolder` append the rest of the path to the `projectFolder` item e.g. `"${workspaceFolder}\TestProject.X"`
     * If building an MPASM project, replace the problem matcher with the following:
-    ```JSON
+    ```JSONC
     "problemMatcher": [
                 "$mpasm",
                 "$mpasm-msg"
@@ -72,7 +72,7 @@ The Microchip Debugger comes built-in with MPLABX, which makes it the most ideal
 However, it does have a few oddities, such as not taking arguments directly, opting instead to take them in view a "script file", and not releasing the reset line to the target device after programming when ran on macOS. The macOS issue is something that Microchip will need to address. To address the need for a script instead of command line arguments, the extension will automatically take all `args` and save them to a temporary file first, then the path of the script is passed to the mdb execution. If you would like to use the `mdb` command directly, you can override the behavior with the `Mdb Command Args Redirect To Script` setting.
 
 Here are a few examples of how to use the `mdb` command from a task:
-```JSON
+```JSONC
 {
     // This configuration will attempt to generate the standard arguments for the user from the project file
     "label": "MPLABX Program",
@@ -101,7 +101,7 @@ Here are a few examples of how to use the `mdb` command from a task:
 The MPLABX Integrated Programming Environment (IPE) is an optional program that can be installed while installing the MPLABX Integrated Development Environment (IDE). This method provides a standard command line interface though, and works reliably on all operating systems that support MPLABX. However, it is an optional program, so care needs to be taken when installing MPLABX IDE to make sure MPLABX IPE is also installed.
 
 Here are a few examples of how to use the `ipe` command from a task:
-```JSON
+```JSONC
     // This configuration will attempt to generate the standard arguments for the user from the project file
     {
         "label": "MPLABX Program",
@@ -143,7 +143,7 @@ This method is designed to be the easiest to use. All programer settings are pul
 > An issue was found with 4 series programers (e.g. PICKit4 and ICD4) that cause the programers to not work with the extension if settings were being sent. If settings are needed they can be selectively turned on using the `Programer Tool Allow List` setting
 
 #### Example MPLABX Configuration
-```JSON
+```JSONC
 {
     "type": "mplabx",
     "request": "launch",
@@ -174,7 +174,7 @@ This method allows the users more direct access the Microchip Debugger (MDB) whi
 If you would like to modify tool options, such as providing power from the tool, they can be added to the `toolOptions` input. The best place to find the available option names is in a `configuration.xml` file that uses the given tool.
 
 #### Example MDB Configuration
-```JSON
+```JSONC
 {
     "type": "mdb",
     "request": "launch",
