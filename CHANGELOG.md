@@ -1,7 +1,12 @@
 # Changelog
+### 0.2.2
+* Added support for the Atmel® Embedded Debugger
+    * Should address [Issue #25](https://github.com/callwyat/mplab-extension/issues/25)
+
 ### 0.2.0
 * Added program tasks!
     * See the readme for details on how to set up a program task
+    * Address [Issue #28](https://github.com/callwyat/mplab-extension/issues/28)
 * Created a new `vslabx` task type that gives the user direct access to the following
   mplabx command:
     * make
