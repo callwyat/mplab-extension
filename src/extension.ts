@@ -22,8 +22,10 @@ import { MdbDebugSession } from './debugAdapter/mplabxDebug';
 import { activateMplabxDebug } from './debugAdapter/activateMplabxDebug';
 import { MPLABXAssistant, MpMakeTaskDefinition, MpToolTaskDefinition } from './mplabxAssistant';
 import { MPLABXPaths } from './common/mplabPaths';
-import { MDBCommunications } from './debugAdapter/mdbCommunications';
+import { IUserPrompt, MDBCommunications } from './debugAdapter/mdbCommunications';
 import { waitForTaskCompletion } from './common/taskHelpers';
+import { MplabxDebugConfiguration } from './debugAdapter/activateMplabxDebug';
+import { AsmCompletionItemProvider, AsmHoverProvider } from './completion/AsmCompletionItemProvider';
 
 /*
  * The compile time flag 'runMode' controls how the debug adapter is run.
@@ -34,6 +36,8 @@ const runMode: 'external' | 'server' | 'namedPipeServer' | 'inline' = 'server';
 const mplabxAssistant = new MPLABXAssistant();
 
 const mplabxPaths = new MPLABXPaths();
+
+const mdbDebugSession: Map<string, MdbDebugSession> = new Map();
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -76,12 +80,17 @@ export function activate(context: vscode.ExtensionContext) {
 			const projectPath = await selectMplabxProjectFolder();
 
 			if (projectPath) {
-				const task = await vscode.tasks.executeTask(mplabxAssistant.getCleanTask({
+				const clean = await vscode.tasks.executeTask(mplabxAssistant.getCleanTask({
 					projectFolder: projectPath,
 					type: 'clean'
 				}));
-
-				return await waitForTaskCompletion(task);
+				await waitForTaskCompletion(clean);
+				
+				const cleanD = await vscode.tasks.executeTask(mplabxAssistant.getCleanTask({
+					projectFolder: projectPath,
+					type: 'clean'
+				}, true));
+				return await waitForTaskCompletion(cleanD);
 			}
 		}),
 
@@ -146,6 +155,10 @@ export function activate(context: vscode.ExtensionContext) {
 				}), { title: title ?? 'MDB: Attached Tools' });
 		}),
 
+		vscode.commands.registerCommand('vslabx.killAllMdb', title => {
+			killAllMdbProcess();
+		}),
+
 		vscode.tasks.registerTaskProvider('mplabx', {
 			provideTasks(token?: vscode.CancellationToken) {
 				return [];
@@ -160,7 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
 							return mplabxAssistant.getBuildTask(definition, _task.scope);
 
 						case 'clean':
-							return mplabxAssistant.getCleanTask(definition, _task.scope);
+							return mplabxAssistant.getCleanTask(definition, false, _task.scope);
 
 						case 'program':
 							return mplabxAssistant.getProgramTask(definition, _task.scope);
@@ -179,6 +192,26 @@ export function activate(context: vscode.ExtensionContext) {
 				return mplabxAssistant.getToolTask(definition, _task.scope);
 			}
 		}),
+
+		vscode.debug.onDidReceiveDebugSessionCustomEvent(async e => {
+			// Handle requests from the Debug Adapter that are meant for the user
+			if (e.event === 'userPrompt') {
+				const message: IUserPrompt = e.body;
+
+				// Make sure the Debug Console is in focus
+				vscode.commands.executeCommand('workbench.panel.repl.view.focus');
+
+				const userResponse = await vscode.window.showWarningMessage(message.message, {
+					modal: true,
+				}, ...message.options);
+
+				e.session.customRequest('userPrompt', userResponse ?? 'No');
+			}
+		}),
+
+		vscode.languages.registerCompletionItemProvider({ language: 'asm' }, new AsmCompletionItemProvider()),
+		vscode.languages.registerHoverProvider({ language: 'asm' }, new AsmHoverProvider()),
+		
 	);
 }
 
@@ -198,6 +231,12 @@ async function selectMplabxProjectFolder(): Promise<string | undefined> {
 }
 
 export function deactivate() {
+	killAllMdbProcess();
+}
+
+function killAllMdbProcess() {
+	mdbDebugSession.forEach((v, k) => v.shutdown(true));
+	mdbDebugSession.clear();
 }
 
 class MdbDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDescriptorFactory {
@@ -205,24 +244,27 @@ class MdbDebugAdapterServerDescriptorFactory implements vscode.DebugAdapterDescr
 	private server?: Net.Server;
 
 	createDebugAdapterDescriptor(session: vscode.DebugSession, executable: vscode.DebugAdapterExecutable | undefined): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-
 		if (!this.server) {
 			// start listening on a random port
 			this.server = Net.createServer(socket => {
-				const session = new MdbDebugSession();
-				session.setRunAsServer(true);
-				session.start(socket as NodeJS.ReadableStream, socket);
+				let debugSession: MdbDebugSession;
+				const configArgs = session.configuration as MplabxDebugConfiguration;
+				
+				if (configArgs.type === 'mdb' && configArgs.runMdbAsServer) {
+					debugSession = mdbDebugSession.get(session.name) ?? new MdbDebugSession();
+					mdbDebugSession.set(session.name, debugSession);
+					debugSession.setRunAsServer(true);
+				} else {
+					debugSession = new MdbDebugSession();
+					debugSession.setRunAsServer(false);
+				}
+				
+				debugSession.start(socket as NodeJS.ReadableStream, socket);
 			}).listen(0);
 		}
 
 		// make VS Code connect to debug server
 		return new vscode.DebugAdapterServer((this.server.address() as Net.AddressInfo).port);
-	}
-
-	dispose() {
-		if (this.server) {
-			this.server.close();
-		}
 	}
 }
 

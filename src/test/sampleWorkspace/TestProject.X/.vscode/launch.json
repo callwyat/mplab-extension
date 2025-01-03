@@ -24,6 +24,20 @@
             "preLaunchTask": "MPLABX Build",
             "debug": false,
             "configuration": "default"
-        }
+        },
+        {
+            "name": "Options Test",
+            "type": "mdb",
+            "request": "launch",
+            "filePath": "${workspaceFolder}/dist/default/production/TestProject.X.production.elf",
+            "device": "PIC16F1509",
+            "toolType": "PICKit4",
+            "toolOptions": {
+                "programoptions.pgmentry.voltage": "high",
+                "poweroptions.powerenable": "true",
+                "voltagevalue": "5.0"
+            },
+            "stopOnEntry": true,
+        },
     ]
 }

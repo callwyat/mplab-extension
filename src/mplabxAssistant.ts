@@ -83,12 +83,14 @@ export class MPLABXAssistant {
 	}
 
 	/** Returns a task that can build an MPLABX Project */
-	public getCleanTask(definition: MpMakeTaskDefinition,
+	public getCleanTask(definition: MpMakeTaskDefinition, debugFolder: boolean = false,
 		scope?: vscode.TaskScope | vscode.WorkspaceFolder): vscode.Task {
 
 		let args: string[] = this.createMakeArgs(definition);
 
 		args.push("clean");
+		if (debugFolder)
+			args.push('TYPE_IMAGE=DEBUG_RUN');
 
 		return new vscode.Task(
 			definition,

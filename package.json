@@ -1,7 +1,7 @@
 {
   "name": "vslabx-extension",
   "displayName": "VSLABX (MPLABX Extension)",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "ya-technologies",
   "description": "Build, Program, and Debug MPLABX Projects.",
   "author": {
@@ -9,6 +9,12 @@
   },
   "license": "MIT",
   "keywords": [
+    "pic",
+    "pic18",
+    "pic assembly",
+    "mpasm",
+    "mplab",
+    "mplabx",
     "multi-root ready"
   ],
   "engines": {
@@ -17,7 +23,8 @@
   "icon": "images/vslabx-icon.png",
   "categories": [
     "Snippets",
-    "Debuggers"
+    "Debuggers",
+    "Programming Languages"
   ],
   "private": true,
   "repository": {
@@ -60,6 +67,10 @@
       {
         "command": "vslabx.listAttachedTools",
         "title": "MDB: List Attached Tools"
+      },
+      {
+        "command": "vslabx.killAllMdb",
+        "title": "MPLABX: Kill all mdb debug server"
       }
     ],
     "breakpoints": [
@@ -142,8 +153,6 @@
           "asm"
         ],
         "label": "MPLABX Debug",
-        "program": "./out/mdbDebugAdapter.js",
-        "runtime": "node",
         "configurationAttributes": {
           "launch": {
             "required": [
@@ -169,9 +178,26 @@
                 "type": "string",
                 "description": "The configuration of the project to build"
               },
+              "toolOptions": {
+                "type": "array",
+                "description": "A dictionary of tool options to set. See the MPLABX configuration file for what is available",
+                "default": []
+              },
               "debug": {
                 "type": "boolean",
                 "description": "Boolean indicating debug build or production build"
+              },
+              "preLaunchOnRestart": {
+                "type": "boolean",
+                "description": "Boolean indicating whether to execute task when the debugger is restarted"
+              },
+              "oldFileType": {
+                "type": "boolean",
+                "description": "True if using old MPLAB v5.2.X"
+              },
+              "runMdbAsServer": {
+                "type": "boolean",
+                "description": "Boolean indicates whether to enable mdb server mode. (It can reduce mdb starting time)"
               }
             }
           }
@@ -216,8 +242,6 @@
           "asm"
         ],
         "label": "Microchip Debug Adapter",
-        "program": "./out/mdbDebugAdapter.js",
-        "runtime": "node",
         "configurationAttributes": {
           "launch": {
             "required": [
@@ -242,9 +266,9 @@
                 "default": "${workspaceFolder}/dist/default/debug/${1:projectName}.debug.elf"
               },
               "toolOptions": {
-                "type": "object",
+                "type": "array",
                 "description": "A dictionary of tool options to set. See the MPLABX configuration file for what is available",
-                "default": {}
+                "default": []
               },
               "stopOnEntry": {
                 "type": "boolean",
@@ -436,8 +460,39 @@
       {
         "language": "jsonc",
         "path": "./snippets/jsonc.json"
+      },
+      {
+        "language": "asm",
+        "path": "./snippets/asm.json"
+      }
+    ],
+    "languages": [
+      {
+        "id": "asm",
+        "aliases": [
+          "PIC Assembly"
+        ],
+        "extensions": [
+          ".asm",
+          ".inc",
+          ".lst"
+        ],
+        "configuration": "./language/language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "asm",
+        "scopeName": "source.asm",
+        "path": "./syntaxes/asm.json"
       }
     ]
+  },
+  "capabilities": {
+    "hoverProvider" : "true",
+    "completionProvider": {
+      "resolveProvider": "true"
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -451,9 +506,11 @@
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
     "@types/sinon": "^17.0.3",
+    "@types/vscode": "^1.83.0",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
     "@typescript-eslint/parser": "^6.19.1",
     "@vscode/debugadapter-testsupport": "^1.63.0",
+    "@vscode/debugprotocol": "^1.67.0",
     "@vscode/test-cli": "^0.0.6",
     "@vscode/test-electron": "^2.3.9",
     "@vscode/vsce": "^2.23.0",
@@ -462,7 +519,6 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@types/vscode": "^1.83.0",
     "@vscode/debugadapter": "^1.63.0",
     "async-mutex": "^0.4.1",
     "await-notify": "^1.0.1",

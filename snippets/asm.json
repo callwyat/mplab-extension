@@ -1,0 +1,11 @@
+{   
+  "PIC ASM macro": {
+    "prefix": [
+      "macro"
+    ],
+    "body": [
+      "${1:name} MACRO ${2:parameter}", "\t$0", "\tENDM"
+    ],
+    "description": "PIC ASM macro"
+  }
+}

@@ -34,13 +34,23 @@ export function activateMplabxDebug(context: vscode.ExtensionContext, factory: v
 export interface MplabxDebugConfiguration extends DebugConfiguration {
 	/** An absolute path to the project to debug. */
 	program: string;
-	/** The name of the configuration to debug */
-	configuration?: string;
 	/** Automatically stop target after launch. If not specified, target does not stop. */
 	stopOnEntry?: boolean;
+	/** Enable logging of the Debug Adapter Protocol. */
+	trace?: boolean;
+	/** The name of the configuration to debug */
+	configuration?: string;
+	/** A dictionary of tool options to set. See the MPLABX configuration file for what is available*/
+	toolOptions?: [string, string][];
 	/** Boolean indicating whether to build and launch a debug build or a production build */
 	debug?: boolean;
-	/** A task to run before running the debugger */
+	/** Boolean indicating whether to execute task when the debugger is restarted */
+	preLaunchOnRestart?: boolean;
+	/** Boolean indicating whether to use older file type '.cof' */
+	oldFileType?: boolean;
+	/** Boolean indicates whether to enable mdb server mode. (It can reduce mdb starting time) */
+	runMdbAsServer?: boolean;
+	/** Task to run before debug session starts. */
 	preLaunchTask?: string;
 }
 
@@ -55,7 +65,7 @@ export interface MdbDebugConfiguration extends DebugConfiguration {
 	/** The absolute path to the .elf file used for debugging */
 	filePath: string;
 	/** A dictionary of tool options to set. See the MPLABX configuration file for what is available*/
-	toolOptions?: any;
+	toolOptions?: [string, string][];
 	/** Automatically stop after launch.*/
 	stopOnEntry?: boolean;
 	/** Enable logging of the Debug Adapter Protocol */
@@ -153,21 +163,22 @@ async function convertDebugConfiguration(args: MplabxDebugConfiguration): Promis
 	// Find the elf
 	let outputFolder = path.join(args.program, 'dist', targetConfig.configurationName, args.debug ? 'debug' : 'production');
 
-	const fileType: string = '.elf';
+	const fileType: string = args.oldFileType ? '.cof' : '.elf';
 
 	// The output folder might not exist yet because the preLaunchTask hasn't ran yet
-	if (args.preLaunchTask) {
+	if (args.preLaunchTask && !fs.existsSync(outputFolder)) {
 		const task = (await vscode.tasks.fetchTasks()).find((t => t.name === args.preLaunchTask));
-
 		if (task) {
 			const taskExecution = await vscode.tasks.executeTask(task);
-			await waitForTaskCompletion(taskExecution);
-
-			// Undefine the task so that it doesn't get ran again
-			args.preLaunchTask = undefined;
+			const exitCode = await waitForTaskCompletion(taskExecution);
+			if (exitCode !== 0) {
+				throw new Error(`Build task end with code: ${exitCode}`);
+			}
+		} else {
+			throw new Error(`PreLaunchTask label "${args.preLaunchTask}" not found in tasks.json`);
 		}
 	}
-
+	
 	if (fs.existsSync(outputFolder)) {
 		let outputFiles = fs.readdirSync(outputFolder, { withFileTypes: true })
 			.filter(item => item.isFile())
@@ -176,29 +187,32 @@ async function convertDebugConfiguration(args: MplabxDebugConfiguration): Promis
 		if (outputFiles.length > 0) {
 			let outputFile = outputFiles[0].name;
 
-			const programerAllowArray = vscode.workspace.getConfiguration('vslabx').get<string[]>('programerToolAllowList');
-			const programerAllowRegExp: RegExp | undefined = programerAllowArray && programerAllowArray.length > 0 ?
-				RegExp(`(${programerAllowArray?.join('|')})`) : undefined;
+			// const programerAllowArray = vscode.workspace.getConfiguration('vslabx').get<string[]>('programerToolAllowList');
+			// const programerAllowRegExp: RegExp | undefined = programerAllowArray && programerAllowArray.length > 0 ?
+			// 	RegExp(`(${programerAllowArray?.join('|')})`) : undefined;
 
-			let toolOptions: any = {};
+			let toolOptions: [string, string][] = [];
 
 			// Collect all the tool settings
-			if (targetConfig.toolOptions && programerAllowRegExp) {
-				const allowRegex: RegExp = programerAllowRegExp;
+			if (targetConfig.toolOptions) {
+				// const allowRegex: RegExp = programerAllowRegExp;
 
-				for (const key in targetConfig.toolOptions) {
+				for (const [key, value] of targetConfig.toolOptions) {
 					// Keys with a capital value don't work
 					if (key.toLowerCase() === key) {
-						const value: string = targetConfig.toolOptions[key];
-
 						// Values with '{' in it, needs resolved... idk how to do
-						if (value.length > 0 && !value.match(/(\$\{.+\}|Press\sto|system settings|\.\D)/) &&
-							key.match(allowRegex)) {
-
-							toolOptions[key] = value;
+						if (value.length > 0 && !value.match(/(\$\{.+\}|Press\sto|system settings|\.\D)/)) {
+							// key.match(allowRegex)
+							toolOptions.push([key, value]);
 						}
 					}
 				};
+			}
+
+			if (args.toolOptions) {
+				for (const [key, value] of args.toolOptions) {
+					toolOptions.push([key, value]);
+				}
 			}
 
 			// Convert from a project name to an MDB name. If a name can't be found,
@@ -215,7 +229,10 @@ async function convertDebugConfiguration(args: MplabxDebugConfiguration): Promis
 				toolType: mdbTool,
 				filePath: path.join(outputFolder, outputFile),
 				toolOptions: toolOptions,
-				stopOnEntry: args.stopOnEntry
+				stopOnEntry: args.stopOnEntry,
+				preLaunchTask: args.preLaunchOnRestart ? args.preLaunchTask : null,
+				preLaunchOnRestart: args.preLaunchOnRestart,
+				runMdbAsServer: args.runMdbAsServer,
 			};
 
 		} else {

@@ -6,6 +6,7 @@ mock-debug.txt
 *.vsix
 
 package-lock.json
+bun.lockb
 
 # MacOS Directory folder
 .DS_Store

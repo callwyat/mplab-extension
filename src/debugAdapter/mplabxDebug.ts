@@ -12,6 +12,7 @@
 
 import {
 	// Logger, logger,
+	Event,
 	LoggingDebugSession,
 	InitializedEvent, StoppedEvent, OutputEvent,
 	Thread, StackFrame, Scope, Source, Handles, Breakpoint, Variable,
@@ -21,9 +22,18 @@ import {
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { basename } from 'path-browserify';
 import { Subject } from 'await-notify';
-import { FileAccessor } from '../common/FileAccessor';
-import { IVariable, MDBCommunications } from './mdbCommunications';
+import { IUserPrompt, MDBCommunications } from './mdbCommunications';
 import { MPLABXPaths } from '../common/mplabPaths';
+
+/**
+ * A custom message back to the client for some interaction
+ */
+export class UserPromptEvent extends Event implements DebugProtocol.Event {
+
+	constructor(body: IUserPrompt) {
+		super('userPrompt', body);
+	}
+}
 
 /**
  * This interface describes the mock-debug specific launch attributes
@@ -56,7 +66,7 @@ export class MdbDebugSession extends LoggingDebugSession {
 	// a Mock runtime (or debugger)
 	protected _runtime: MDBCommunications;
 
-	private _variableHandles = new Handles<'locals' | 'parameters'>();
+	private _variableHandles = new Handles<'locals' | 'parameters' | 'registers'>();
 
 	private _stopOnEntry: boolean = false;
 
@@ -98,6 +108,12 @@ export class MdbDebugSession extends LoggingDebugSession {
 		this._runtime.on('stopOnBreakpoint', () => {
 			this.sendEvent(new StoppedEvent('breakpoint', MdbDebugSession.threadID,));
 		});
+
+		this._runtime.on('userPrompt', args => {
+			const event: Event = new UserPromptEvent(args as IUserPrompt);
+			this.sendEvent(event);
+		});
+
 		// this._runtime.on('stopOnDataBreakpoint', () => {
 		// 	this.sendEvent(new StoppedEvent('data breakpoint', MdbDebugSession.threadID,));
 		// });
@@ -138,6 +154,18 @@ export class MdbDebugSession extends LoggingDebugSession {
 		// this._runtime.on('end', () => {
 		// 	this.sendEvent(new TerminatedEvent());
 		// });
+	}
+
+	/**
+	 * Process any custom messages that may come from the client
+	 */
+	protected async customRequest(command: string, response: DebugProtocol.Response, args: any, request?: DebugProtocol.Request): Promise<any> {
+		if (command === 'userPrompt') {
+			// Process the result of any user prompts
+			return await this._runtime.query(args as string);
+		} else {
+			return super.customRequest(command, response, args, request);
+		}
 	}
 
 	/**
@@ -194,11 +222,9 @@ export class MdbDebugSession extends LoggingDebugSession {
 	}
 
 	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: ILaunchRequestArguments) {
-
 		try {
 			// start the program in the runtime
 			this._runtime.startDebugger(args.device, args.toolType, args.filePath, args.toolOptions).then(r => {
-				
 				this._stopOnEntry = !!args.stopOnEntry;
 				response.success = true;
 				this.sendResponse(response);
@@ -369,6 +395,10 @@ export class MdbDebugSession extends LoggingDebugSession {
 			scopes = scopes.concat(new Scope("Locals", this._variableHandles.create('locals'), false));
 		}
 
+		if (this._runtime.hasRegisters) {
+			scopes = scopes.concat(new Scope("Registers", this._variableHandles.create('registers'), false));
+		}
+
 		if (this._runtime.hasParameters) {
 			scopes = scopes.concat(new Scope("Parameters", this._variableHandles.create('parameters'), false));
 		}
@@ -419,17 +449,19 @@ export class MdbDebugSession extends LoggingDebugSession {
 
 	protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
 
-		let vs: IVariable[] = [];
+		let vs: DebugProtocol.Variable[] = [];
 
 		const v = this._variableHandles.get(args.variablesReference);
 		if (v === 'locals') {
 			vs = await this._runtime.getLocalVariables();
+		} else if (v === 'registers') {
+			vs = await this._runtime.getRegisters();
 		} else if (v === 'parameters') {
 			vs = await this._runtime.getParameters();
 		}
 
 		response.body = {
-			variables: [...vs.map(v => new Variable(v.name, v.value.toString()))]
+			variables: vs
 		};
 
 		this.sendResponse(response);
@@ -466,8 +498,7 @@ export class MdbDebugSession extends LoggingDebugSession {
 	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
-		this._runtime.next();
-		this.sendResponse(response);
+		this._runtime.next().then(()=>this.sendResponse(response));
 	}
 
 	// protected stepInTargetsRequest(response: DebugProtocol.StepInTargetsResponse, args: DebugProtocol.StepInTargetsArguments) {
@@ -488,56 +519,37 @@ export class MdbDebugSession extends LoggingDebugSession {
 	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
 		// Step out isn't supported by MDB, but is needed by the debug adapter
 		// Next closest thing is next command.
-		this._runtime.next();
-		this.sendResponse(response);
+		this._runtime.next().then(()=>this.sendResponse(response));
 	}
 
 	protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): Promise<void> {
 
 		let reply: string | undefined;
-		let rv: Variable | undefined;
-
 		switch (args.context) {
-			// case 'repl':
-			// 	// handle some REPL commands:
-			// 	// 'evaluate' supports to create and delete breakpoints from the 'repl':
-			// 	const matches = /new +([0-9]+)/.exec(args.expression);
-			// 	if (matches && matches.length === 2) {
-			// 		const mbp = await this._runtime.setBreakpoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-			// 		const bp = new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFile)) as DebugProtocol.Breakpoint;
-			// 		bp.id = mbp.id;
-			// 		this.sendEvent(new BreakpointEvent('new', bp));
-			// 		reply = `breakpoint created`;
-			// 	} else {
-			// 		const matches = /del +([0-9]+)/.exec(args.expression);
-			// 		if (matches && matches.length === 2) {
-			// 			const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-			// 			if (mbp) {
-			// 				const bp = new Breakpoint(false) as DebugProtocol.Breakpoint;
-			// 				bp.id = mbp.id;
-			// 				this.sendEvent(new BreakpointEvent('removed', bp));
-			// 				reply = `breakpoint deleted`;
-			// 			}
-			// 		} else {
-			// 			const matches = /progress/.exec(args.expression);
-			// 			if (matches && matches.length === 1) {
-			// 				if (this._reportProgress) {
-			// 					reply = `progress started`;
-			// 					this.progressSequence();
-			// 				} else {
-			// 					reply = `frontend doesn't support progress (capability 'supportsProgressReporting' not set)`;
-			// 				}
-			// 			}
-			// 		}
-			// 	}
-			// fall through
-
+			case 'repl':
+				// handle some REPL commands:
+				// REPL commands are entered via the "Debug Console"
+				const result = await this._runtime.query(args.expression);
+				// Print command result
+				response.body = {
+					result: result,
+					variablesReference: 0
+				};
+				this.sendResponse(response);
+				return;
 			case 'hover':
 			case 'watch':
 				let watch = await this._runtime.printVariable(args.expression);
 
+				let rv: Variable | undefined;
 				if (watch) {
 					rv = new Variable(watch.name, watch.value.toString());
+					response.body = {
+						result: rv.value,
+						variablesReference: rv.variablesReference
+					};
+					this.sendResponse(response);
+					return;
 				} else {
 					reply = 'Out of Scope';
 				}
@@ -552,17 +564,10 @@ export class MdbDebugSession extends LoggingDebugSession {
 			// 	break;
 		}
 
-		if (rv) {
-			response.body = {
-				result: rv.value,
-				variablesReference: rv.variablesReference
-			};
-		} else {
-			response.body = {
-				result: reply ? reply : 'Unknown Expression',
-				variablesReference: 0
-			};
-		}
+		response.body = {
+			result: reply ? reply : 'Unknown Expression',
+			variablesReference: 0
+		};
 
 		this.sendResponse(response);
 	}
@@ -711,6 +716,7 @@ export class MdbDebugSession extends LoggingDebugSession {
 		// if (args.progressId) {
 		// 	this._cancelledProgressId = args.progressId;
 		// }
+		this.sendResponse(response);
 	}
 
 	// protected disassembleRequest(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments) {
@@ -780,8 +786,17 @@ export class MdbDebugSession extends LoggingDebugSession {
 	// }
 
 	protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
-		this._runtime.quit();
-		this.sendResponse(response);
+		if (this._isServer || this._isRunningInline()) {
+			this._runtime.stopDebug().then(() => this.sendResponse(response));
+		} else
+			this.sendResponse(response);
+	}
+
+	shutdown(force: boolean = false): void {
+		if (force || !this._isServer && !this._isRunningInline() && !this._runtime.isDisposed()) {
+			this._runtime.quit().then(super.shutdown);
+		} else
+			super.shutdown();
 	}
 
 	//---- helpers

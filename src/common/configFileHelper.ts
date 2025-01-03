@@ -19,7 +19,7 @@ interface TargetInterface {
     tool: string;
 
     /** Additional options to send to the tool when connecting to the device */
-    toolOptions: {};
+    toolOptions: [string, string][];
 }
 
 /** A collection of methods to use when working with MPLABX configuration.xml files */
@@ -119,16 +119,15 @@ export class MplabxConfigFile {
 
         const tool = conf.toolsSet.platformTool;
 
-        const toolOptions = {};
+        const toolOptions: [string, string][] = [];
 
         // Collect all the tool settings
         if (conf[tool]) {
-
-            conf[tool].property.forEach((pair) => {
+            for (const pair of conf[tool].property) {
                 const key: string = pair.key;
                 const value: string = pair.value;
-                toolOptions[key] = value;
-            });
+                toolOptions.push([key, value]);
+            };
         }
 
         // Get the tool

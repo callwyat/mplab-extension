@@ -1,4 +1,8 @@
 # Changelog
+### 0.2.3
+* Added support to prompt the user with any questions the Microchip Debugger may ask
+    * Should address [Issue #30](https://github.com/callwyat/mplab-extension/issues/30)
+
 ### 0.2.2
 * Added support for the Atmel® Embedded Debugger
     * Should address [Issue #25](https://github.com/callwyat/mplab-extension/issues/25)

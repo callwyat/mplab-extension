@@ -3,15 +3,17 @@
  *--------------------------------------------------------*/
 
 'use strict';
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, spawn, exec } from 'child_process';
+import { DebugProtocol } from '@vscode/debugprotocol';
 import { Mutex } from 'async-mutex';
 import path = require('path');
 import fs = require('fs');
 import { EventEmitter } from 'stream';
 import { debug } from 'console';
 import { normalizePath } from '../common/mdbPaths';
+import { window } from 'vscode';
 
-enum ConnectionLevel {
+export enum ConnectionLevel {
 	none,
 	deviceSet,
 	connected,
@@ -36,6 +38,12 @@ export const haltReasonEventMap = {
 	[HaltReason.step]: "stopOnStep",
 	[HaltReason.halt]: "stopOnPause"
 } as const;
+
+export interface IUserPrompt {
+	title: string,
+	message: string,
+	options: string[]
+}
 
 export interface IConnectResult {
 	success: boolean,
@@ -80,13 +88,6 @@ export interface ISetWatchResponse {
 	message: string;
 }
 
-export interface IVariable {
-	name: string;
-	value: number;
-	indexChildren?: IVariable[];
-	namedChildren?: IVariable[];
-}
-
 export interface ILogWriter {
 	write(input: string): void;
 }
@@ -118,13 +119,22 @@ export class MDBCommunications extends EventEmitter {
 	private _mdbProcess: ChildProcess;
 	private _mdbLogger: ILogWriter | undefined;
 	private _mdbMutex: Mutex = new Mutex();
+	private _elfFile: string = '';
 
+	private _messagePart: string = '';
 	private _breakpoints: IBreakpoint[] = [];
 	private _haltReason: HaltReason = HaltReason.none;
+	/** For debugging assembly language, stacktrace will be empty */
+	private _lastStop?: [string, number];
 
 	private _connectionLevel: ConnectionLevel = ConnectionLevel.none;
+	private _connectionType?: ConnectionType;
 
 	private _emitter: EventEmitter = new EventEmitter();
+
+	public isDisposed(): boolean {
+		return this.disposed;
+	}
 
 	private get connectionLevel(): ConnectionLevel {
 		return this._connectionLevel;
@@ -153,26 +163,49 @@ export class MDBCommunications extends EventEmitter {
 
 		// (Windows Compatibility) Trim off quotes if there are any
 		mdbPath = mdbPath.replace(/"/g, "",);
-
-		this._mdbProcess = spawn(mdbPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
+		// https://nodejs.org/api/child_process.html#spawning-bat-and-cmd-files-on-windows
+		if (process.platform === 'win32')
+			this._mdbProcess = exec(`"${mdbPath}"`);
+		else
+			this._mdbProcess = spawn(mdbPath, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 		this.logLine(`--- Started Microchip Debugger ---`, LogLevel.info);
 
 		this._mdbProcess.stderr?.on('data', (error) => {
 			debug(`MDB ERROR -> ${error}`);
 		});
 
-		this._mdbProcess.stdout?.on('data', async (data: String) => {
-			let d: string = `${data}`;
-			this.log(d, LogLevel.read);
+		let waitMsgComplete = false;
+		let waitMsgCompleteTimeout: NodeJS.Timeout;
+		this._mdbProcess.stdout?.on('data', async (raw: Buffer) => {
+			const data = raw.toString();
 
-			if (d.match(/Stop at/g)) {
-				this.handleStopAt(d);
+			if (waitMsgComplete)
+				this._messagePart += data;
+			else this._messagePart = data;
+			// Check if stop at message
+			if (this._messagePart.match(/Stop at/g)) {
+				// Check if message completed
+				if (await this.handleStopAt(this._messagePart)) {
+					waitMsgComplete = true;
+					waitMsgCompleteTimeout = setTimeout(() => {
+						this.continue();
+						waitMsgComplete = false;
+					}, 100);
+					return;
+				}
+				this._messagePart = this._messagePart.replace(/\n>/g, '');
 			}
+			if (waitMsgCompleteTimeout) clearTimeout(waitMsgCompleteTimeout);
+			waitMsgComplete = false;
+
+			const consoleOutMsg = this._messagePart.replace(/>/g, '').trim();
+			if (consoleOutMsg) this.logLine(consoleOutMsg, LogLevel.read);
 		});
 
 		this._mdbProcess.on('close', (code) => {
 			this.logLine(`--- Microchip Debugger exited with code ${code} ---`,
 				code === 0 ? LogLevel.info : LogLevel.error);
+			this.disposed = true;
 		});
 
 		// Wait for the Microchip Debugger to start up.
@@ -198,7 +231,7 @@ export class MDBCommunications extends EventEmitter {
 		this.log(`${input}\r\n`, logLevel);
 	}
 
-	private _write(input: string, level: ConnectionLevel) {
+	private _write(input: string) {
 		this.mdbProcess.stdin?.write(input + '\r\n');
 		this.logLine(input, LogLevel.wrote);
 	}
@@ -206,10 +239,10 @@ export class MDBCommunications extends EventEmitter {
 	/** Writes the given command to the Microchip Debugger
 	 * @param input The command to send
 	 */
-	private write(input: string, level: ConnectionLevel) {
+	public write(input: string, level: ConnectionLevel) {
 		if (this.connectionLevel >= level) {
 			this._mdbMutex.runExclusive(() => {
-				this._write(input, level);
+				this._write(input);
 			});
 		} else {
 			this.once(level.toString(), () => this.write(input, level));
@@ -251,35 +284,32 @@ export class MDBCommunications extends EventEmitter {
 
 	/**
 	 * Handles a "Stop at" message from output. Swallows responses until entirety of "Stop at" message has been chunked out
-	 * @param initialMessage The initial message containing "Stop at" and potentially more of the data
+	 * @param message The "Stop at" message
 	 */
-	private async handleStopAt(initialMessage: string): Promise<void> {
-		// Assume we're setting this correctly and can trust it to early return if the stop is user generated in some sense
-		if (this._haltReason !== HaltReason.none) {
-			const eventToDispatch = haltReasonEventMap[this._haltReason];
-			this.emit(eventToDispatch);
-			return; // Early return, as stopAt otherwise checks exceptions and breakpoints
-		}
-
-		// const addressRegex = /address:(?<address>0x[0-9a-fA-F]{2,8})/gm;
+	private async handleStopAt(message: string): Promise<boolean> {
+		const addressRegex = /address:(?<address>0x[0-9a-fA-F]{1,8})/gm;
 		const fileRegex = /file:(?<file>.+)/gm;
 		const lineRegex = /source line:(?<line>\d+)/gm;
 
-		let message = initialMessage;
 		let matches = message.match(lineRegex);
 
-		// Stop at message may or may not come in a single data or over multiple. 
-		// If we don't match the pattern, we need to keep reading and re-parse when a full message has been received.
 		if ((matches?.length || 0) < 1) {
-			const remainingResult = await this.readResult();
-			message += remainingResult;
+			return true;
 		}
 
 		// const _address = addressRegex.exec(message)?.groups?.address;
 		const file = fileRegex.exec(message)?.groups?.file;
 		const line = parseInt(lineRegex.exec(message)?.groups?.line || '-1', 10);
 
-		if (!file || line < 0) { return; };
+		if (!file || line < 0) { return false; };
+		this._lastStop = [file, line];
+
+		// Assume we're setting this correctly and can trust it to early return if the stop is user generated in some sense
+		if (this._haltReason !== HaltReason.none) {
+			const eventToDispatch = haltReasonEventMap[this._haltReason];
+			this.emit(eventToDispatch);
+			return false; // Early return, as stopAt otherwise checks exceptions and breakpoints
+		}
 
 		// Find potential breakpoint based on file name and line - if this does not exist, it must be an exception.
 		const breakpoint = this._breakpoints.find(bp => (normalizePath(bp.file) === normalizePath(file)) && bp.line === line);
@@ -288,13 +318,21 @@ export class MDBCommunications extends EventEmitter {
 		}
 
 		this.emit('stopOnBreakpoint');
+		return false;
+	}
+
+	/** Sends a command to the Microchip Debugger and returns the whole response
+	 * @param input The command to send to the debugger
+	 */
+	async query(input: string): Promise<string> {
+		return this._query(input, this.connectionLevel);
 	}
 
 	/** Sends a command to the Microchip Debugger and returns the whole response
 	 * @param input The command to send to the debugger
 	 * @param level The ConnectionLevel required in order for the command to work
 	 */
-	async query(input: string, level: ConnectionLevel, until: string = '>'): Promise<string> {
+	private async _query(input: string, level: ConnectionLevel, until: string = '>'): Promise<string> {
 
 		if (this.connectionLevel >= level) {
 			return this._mdbMutex.runExclusive(() => {
@@ -304,7 +342,7 @@ export class MDBCommunications extends EventEmitter {
 				}
 
 				let result: Promise<string> = this.readResult(until);
-				this._write(input, level);
+				this._write(input);
 
 				return result;
 			});
@@ -313,7 +351,7 @@ export class MDBCommunications extends EventEmitter {
 				this._emitter.on('cancel', reject);
 
 				this.once(level.toString(), () => {
-					this.query(input, level, until).then(v => resolve);
+					this._query(input, level, until).then(v => resolve);
 				});
 
 				this._emitter.off('cancel', reject);
@@ -324,7 +362,7 @@ export class MDBCommunications extends EventEmitter {
 	/** Gets a list of all the attached hardware tools that can program */
 	public async getAttachedProgramers(): Promise<IProgramerInformation[]> {
 
-		return this.query("HwTool", ConnectionLevel.none).then((value) => {
+		return this._query("HwTool", ConnectionLevel.none).then((value) => {
 
 			let lines: string[] = value.split('\n');
 
@@ -343,7 +381,7 @@ export class MDBCommunications extends EventEmitter {
 					serialNumber: 'None'
 				}];
 			}
-			
+
 			return lines.map((line => {
 				let match = line.match(/(?<index>\d+)\s*(?<type>[\w\d]+)\s*(?<serialNumber>[\w\d]+)\s*(?<ipAddress>[\w\/\d]+)\s*(?<name>[\w\d\s]+)/);
 
@@ -362,7 +400,7 @@ export class MDBCommunications extends EventEmitter {
 
 	/** Gets a list of all supported hardware tools that can be used */
 	public async getSupportedProgramers(): Promise<ISupportedProgramerInformation[]> {
-		return this.query("HwTool Supported", ConnectionLevel.none).then((value) => {
+		return this._query("HwTool Supported", ConnectionLevel.none).then((value) => {
 
 			let lines: string[] = value.split('\n');
 
@@ -386,75 +424,111 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
-	public async connect(targetDevice: string, toolSet: string, programMode: boolean, toolSetOptions: object = {}): Promise<ConnectionType> {
+	public async connect(targetDevice: string, toolSet: string, programMode: boolean, toolSetOptions: [string, string][] = []): Promise<ConnectionType> {
+		if (this._connectionType != null && this.connectionLevel >= ConnectionLevel.connected)
+			return this._connectionType;
 
 		this.write(`Device ${targetDevice}`, ConnectionLevel.none);
 
+		this._messagePart = '';
 		this.connectionLevel = ConnectionLevel.deviceSet;
 
 		// Apply all the tool settings
 		if (toolSetOptions) {
-			for (const [key, value] of Object.entries(toolSetOptions)) {
-				this.query(`set ${key} ${value}`, ConnectionLevel.deviceSet);
+			for (const [key, value] of toolSetOptions) {
+				const result = (await this._query(`set ${key} ${value}`, ConnectionLevel.deviceSet))
+					.replace(/^\>+|\>+$/g, '');
+				// if (result.match(/Error: /)) {
+				// 	window.showErrorMessage(`${result} ${key} ${value}`);
+				// }
 			};
 		}
 
 		// Connect to the tools
-		let message: string = await this.query(`HwTool ${toolSet}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet, '>');
+		let message: string = await this._query(`HwTool ${toolSet}${programMode ? ' -p' : ''}`, ConnectionLevel.deviceSet, '>');
 
 		// If message is just the default > output, keep reading. On different platforms, \r\n> may be the case, but we're looking for a longer string anyway.
-		if (message.length < 8) {
-			message = await this.readResult('>');
+		while (message.length < 8) {
+			message = await this.readResult();
 		}
 
-		let result: ConnectionType = toolSet === "Sim" ? ConnectionType.simulator : ConnectionType.hardware;
+		this._connectionType = toolSet === "Sim" ? ConnectionType.simulator : ConnectionType.hardware;
 
-		if (result === ConnectionType.hardware && !message.match(/Target device (.+) found\./)) {
-			throw new Error(`Failed to connect to target device ${message.replace(/^\>+|\>+$/g, '').trim()}`);
+		if (this._connectionType === ConnectionType.hardware) {
+			// The MDB is asking a question, forward to the user
+			let question: RegExpMatchArray | null;
+			while (question = message.match(/.*\?/)) {
+				const prompt: IUserPrompt = {
+					title: 'User input needed',
+					message: question[0],
+					options: ['Yes', 'No']
+				};
+
+				this.emit('userPrompt', prompt);
+
+				message = await this.readResult();
+			}
+
+			if (!message.match(/Target device (.+) found\./)) {
+				throw new Error(`Failed to connect to target device ${message.replace(/^\>+|\>+$/g, '').trim()}`);
+			}
 		}
 
 		this.connectionLevel = ConnectionLevel.connected;
 
-		return result;
+		return this._connectionType;
 	}
 
-	public async startDebugger(targetDevice: string, toolSet: string, elfFile: string, toolSetOptions: object = {}, stopOnEntry = false) {
-
+	public startDebugger(targetDevice: string, toolSet: string, elfFile: string, toolSetOptions: [string, string][] = [], stopOnEntry = false): Promise<void> {
 		if (!fs.existsSync(elfFile)) {
 			throw new Error(`Failure to find the given file: ${elfFile}`);
 		}
+		this._elfFile = elfFile;
+		return this.connect(targetDevice, toolSet, false, toolSetOptions).then((connectionType) => this.programDevice());
+	}
 
-		return this.connect(targetDevice, toolSet, false, toolSetOptions).then(async (connectionType) => {
-			// Program the chip
-			const programResult = await this.query(`Program "${elfFile}"`, ConnectionLevel.connected);
-			if (programResult.match(/Program succeeded\./) || programResult.match(/Programming\/Verify complete/)) {
+	public async programDevice() {
+		// Program the chip
+		let message = await this._query(`Program "${this._elfFile}"`, ConnectionLevel.connected);
+		let question: RegExpMatchArray | null;
+		while (question = message.match(/.*\?/)) {
+			const prompt: IUserPrompt = {
+				title: 'User input needed',
+				message: question[0],
+				options: ['Yes', 'No']
+			};
 
-				this.connectionLevel = ConnectionLevel.programed;
+			this.emit('userPrompt', prompt);
 
-				// Let everyone know initialization has completed.
-				this.emit('initCompleted');
+			message = await this.readResult();
+		}
+		if (message.match(/Program succeeded\./) || message.match(/Programming\/Verify complete/)) {
 
-			} else {
-				throw new Error('Failure to write program to device');
-			}
-		});
+			this.connectionLevel = ConnectionLevel.programed;
+
+			// Let everyone know initialization has completed.
+			this.emit('initCompleted');
+
+		} else {
+			throw new Error('Failure to write program to device');
+		}
 	}
 
 	public clearBreakpoints() {
-		this.query('delete', ConnectionLevel.programed).then(() => {
+		this._query('delete', ConnectionLevel.programed).then(() => {
 			this._breakpoints = [];
 		});
 	}
 
 	public clearBreakpoint(id: number) {
-		this.query(`delete ${id}`, ConnectionLevel.programed).then(() => {
+		this._query(`delete ${id}`, ConnectionLevel.programed).then(() => {
 			this._breakpoints = this._breakpoints.filter(bp => bp.id !== id);
 		});
 	}
 
 	public async setBreakpoint(file: string, line: bigint): Promise<ISetBreakpointResponse> {
 
-		return this.query(`break ${path.basename(file)}:${line}`, ConnectionLevel.programed).then(response => {
+		return this._query(`break ${path.basename(file)}:${line}`, ConnectionLevel.programed).then(response => {
 			let r = response.match(/Breakpoint (\d+) at file (.+), line (\d+)\./s);
 
 			if (!r) { return { id: -1, line: -1, verified: false, file }; };
@@ -469,7 +543,7 @@ export class MDBCommunications extends EventEmitter {
 
 	public async getBreakpoints(): Promise<Array<IGetBreakpointResponse> | void> {
 
-		return this.query('info break', ConnectionLevel.programed).then(response => {
+		return this._query('info break', ConnectionLevel.programed).then(response => {
 			let re = [...response.matchAll(/(\d+)\s*(y|n)\s*(0x[\dA-F]+)\s*at (.*):(\d+)/g)];
 
 			return re.forEach((m, i) => {
@@ -486,66 +560,87 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
-	private lastLocals: Array<IVariable> | undefined;
-	private lastParameters: Array<IVariable> | undefined;
+	private lastLocals: Array<DebugProtocol.Variable> = [];
+	private lastRegisters: Array<DebugProtocol.Variable> = [];
+	private lastParameters: Array<DebugProtocol.Variable> = [];
 	public async getStack(): Promise<Array<IGetStackResponse> | void> {
 
-		return this.query('backtrace full', ConnectionLevel.programed).then(response => {
+		return this._query('backtrace full', ConnectionLevel.programed).then(response => {
 
 			let localsMatches = [...response.matchAll(/\s+(\w+) = 0x(\d+)/g)];
 
 			this.lastLocals = localsMatches.map((m, i) => {
 				return {
 					name: m[1],
-					value: parseInt(m[2], 16),
+					value: m[2],
+					variablesReference: 0,
 				};
 			});
-
 			let parametersMatch = [...response.matchAll(/\s+(\w+)=0x(\d+)/g)];
 
 			this.lastParameters = parametersMatch.map((m, i) => {
 				return {
 					name: m[1],
-					value: parseInt(m[2], 16),
+					value: m[2],
+					presentationHint: { kind: 'data' },
+					variablesReference: 0,
 				};
 			});
 
-			let stackMatches = [...response.matchAll(/#(\d+)\s+([a-zA-z0-9_ ]*) \(\) at\s(.*?):(\d+)/g)];
-
-			return stackMatches.map((m, i) => {
-				return {
-					index: parseInt(m[1]),
+			const stackMatches = [...response.matchAll(/#(\d+)\s+([a-zA-z0-9_. ]*) \(\) at\s(.*?):(\d+)/g)];
+			const stack: IGetStackResponse[] = [];
+			for (let i = 0; i < stackMatches.length; i++) {
+				const m = stackMatches[i];
+				let index = parseInt(m[1]);
+				let filePath = m[3];
+				let line = parseInt(m[4]);
+				if (!filePath && this._lastStop) {
+					filePath = this._lastStop[0];
+					line = this._lastStop[1];
+				}
+				stack[i] = {
+					index: index,
 					name: m[2],
-					file: m[3],
-					line: parseInt(m[4])
+					file: filePath,
+					line: line
 				};
-			});
+			}
+			// When using old mplab, backtrace maybe empty
+			if (stackMatches.length === 0 && this._lastStop) {
+				return [{
+					index: 0,
+					name: 'Unknown',
+					file: this._lastStop[0],
+					line: this._lastStop[1]
+				}];
+			}
+
+			return stack;
 		});
 	}
 
+	public get hasRegisters(): boolean {
+		return this.lastRegisters.length > 0;
+	}
 
 	public get hasLocalVariables(): boolean {
-		if (this.lastLocals && this.lastLocals.length) {
-			return this.lastLocals.length > 0;
-		}
-		return false;
+		return this.lastLocals.length > 0;
 	}
 
 	public get hasParameters(): boolean {
-		if (this.lastParameters && this.lastParameters.length) {
-			return this.lastParameters.length > 0;
-		}
-		return false;
+		return this.lastParameters.length > 0;
 	}
 
-	public async getLocalVariables(): Promise<Array<IVariable>> {
-
-		return this.lastLocals ? this.lastLocals : [];
+	public async getRegisters(): Promise<Array<DebugProtocol.Variable>> {
+		return this.lastRegisters;
 	}
 
-	public async getParameters(): Promise<Array<IVariable>> {
+	public async getLocalVariables(): Promise<Array<DebugProtocol.Variable>> {
+		return this.lastLocals;
+	}
 
-		return this.lastParameters ? this.lastParameters : [];
+	public async getParameters(): Promise<Array<DebugProtocol.Variable>> {
+		return this.lastParameters;
 	}
 
 	public run(): void {
@@ -563,18 +658,35 @@ export class MDBCommunications extends EventEmitter {
 		this.write(machineInstruction ? 'Stepi' : 'Step', ConnectionLevel.programed);
 	}
 
-	public next(): void {
+	public next(): Promise<string> {
 		this._haltReason = HaltReason.next;
-		this.write('Next', ConnectionLevel.programed);
+		return this._query('Next', ConnectionLevel.programed);
 	}
 
-	public halt(): void {
+	public halt(): Promise<string> {
 		this._haltReason = HaltReason.halt;
-		this.write('Halt', ConnectionLevel.programed);
+		return this._query('Halt', ConnectionLevel.programed);
 	}
 
-	public quit(): void {
-		this.dispose();
+	public stopDebug(): Promise<void> {
+		this._haltReason = HaltReason.none;
+		if (this._connectionType === ConnectionType.simulator) {
+			// IDK why but it unlock the build output file 
+			return this.programDevice();
+		} else
+			return this.halt().then();
+	}
+
+	public quit(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			if (!this.disposed) {
+				this._mdbProcess.once('close', resolve);
+				setTimeout(this._mdbProcess.kill, 1000);
+				this._write('Quit');
+				this.disposed = true;
+			} else // Already disposed
+				resolve();
+		});
 	}
 
 	public async watch(address: string, breakOnType: BreakOnType, value?: number, passCount?: number): Promise<ISetWatchResponse> {
@@ -589,7 +701,7 @@ export class MDBCommunications extends EventEmitter {
 			command += ` ${passCount}`;
 		}
 
-		return this.query(command, ConnectionLevel.programed).then(response => {
+		return this._query(command, ConnectionLevel.programed).then(response => {
 			let re = response.match(/Watchpoint (\d+)\./);
 
 			if (re) {
@@ -608,32 +720,25 @@ export class MDBCommunications extends EventEmitter {
 		});
 	}
 
-	public async printVariable(name: string): Promise<IVariable | undefined> {
+	public async printVariable(name: string): Promise<DebugProtocol.Variable | undefined> {
 
-		const hexMatch = name.match(/^0x([\dA-Fa-f]+)$/);
-		if (hexMatch) {
-			name = parseInt(hexMatch[1]).toString();
-		}
+		// const hexMatch = name.match(/^0x([\dA-Fa-f]+)$/);
+		// if (hexMatch) {
+		// 	name = parseInt(hexMatch[1]).toString();
+		// }
 
-		return this.query(`Print ${name}`, ConnectionLevel.programed).then(response => {
+		return this._query(`Print ${name}`, ConnectionLevel.programed).then(response => {
 			const re = response.match(/(\w+)=\n?(\d+)/);
 
 			if (re) {
 				return {
 					name: re[1],
-					value: parseFloat(re[2]),
+					value: re[2],
+					variablesReference: 0,
 				};
 			} else {
 				return undefined;
 			}
 		});
-	}
-
-	/** Disposes the assistant */
-	public dispose() {
-		if (!this.disposed && this._mdbProcess) {
-			this._write('Quit', ConnectionLevel.none);
-		}
-		this.disposed = true;
 	}
 }
